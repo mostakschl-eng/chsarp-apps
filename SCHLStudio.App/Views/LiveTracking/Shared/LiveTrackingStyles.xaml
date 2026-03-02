@@ -10,6 +10,7 @@
         <Setter Property="Padding" Value="16,14"/>
         <Setter Property="MinHeight" Value="80"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
         <Setter Property="Effect">
             <Setter.Value>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="6" Opacity="0.08" Color="#000000"/>
@@ -22,18 +23,30 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="#888888"/>
         <Setter Property="FontFamily" Value="{StaticResource MainFontFamily}"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
     </Style>
 
     <Style x:Key="LiveCardValueStyle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="22"/>
-        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/>
-        <Setter Property="Margin" Value="0,6,0,0"/>
         <Setter Property="FontFamily" Value="{StaticResource MainFontFamily}"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
     </Style>
 
     <Style x:Key="LiveCardIconStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
         <Setter Property="FontSize" Value="18"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>

@@ -23,11 +23,25 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
             private set => SetProperty(ref _totalPausedUsers, value);
         }
 
+        private int _totalWorkingUsers;
+        public int TotalWorkingUsers
+        {
+            get => _totalWorkingUsers;
+            private set => SetProperty(ref _totalWorkingUsers, value);
+        }
+
         private string _totalPauseTime = "0m";
         public string TotalPauseTimeFormatted
         {
             get => _totalPauseTime;
             private set => SetProperty(ref _totalPauseTime, value);
+        }
+
+        private string _totalWorkingTime = "0m";
+        public string TotalWorkingTimeFormatted
+        {
+            get => _totalWorkingTime;
+            private set => SetProperty(ref _totalWorkingTime, value);
         }
 
         private string _avgPauseTime = "0m";
@@ -222,6 +236,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                 var newGroups = new List<PauseUserGroupModel>();
                 var allReasons = new List<string>();
                 double grandTotalPauseTime = 0;
+                double grandTotalWorkingTime = 0;
 
                 foreach (var group in grouped)
                 {
@@ -231,6 +246,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                     double totalPause = userSessions.Sum(s => s.PauseTime);
                     int totalPauseCount = userSessions.Sum(s => s.PauseCount);
                     grandTotalPauseTime += totalPause;
+                    grandTotalWorkingTime += totalWork;
 
                     DateTime? firstLogin = null;
                     DateTime? lastLogout = null;
@@ -390,7 +406,9 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                 }
 
                 TotalPausedUsers = newGroups.Count(g => string.Equals(g.Status, "Paused", StringComparison.OrdinalIgnoreCase));
+                TotalWorkingUsers = newGroups.Count(g => string.Equals(g.Status, "Working", StringComparison.OrdinalIgnoreCase));
                 TotalPauseTimeFormatted = LiveTrackingFileModel.FormatMinutes(grandTotalPauseTime);
+                TotalWorkingTimeFormatted = LiveTrackingFileModel.FormatMinutes(grandTotalWorkingTime);
 
                 if (TotalPausedUsers > 0)
                 {
