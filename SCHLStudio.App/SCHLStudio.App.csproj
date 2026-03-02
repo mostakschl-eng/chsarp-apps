@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>app_icon.ico</ApplicationIcon>
+    <Version>1.0.3</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="SocketIOClient" Version="3.1.2" />
+    <PackageReference Include="VirtualizingWrapPanel" Version="2.3.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Remove="Views\Components\Dialogs\PasswordSetupDialog.xaml" />
+    <Page Remove="Views\Components\Dialogs\PauseReasonDialog.xaml" />
+    <Page Remove="Views\Components\Actions\ActionBar.xaml" />
+    <Page Remove="Views\Components\Dashboard\DashboardPanel.xaml" />
+    <Page Remove="Views\Components\Explorer\ExplorerGrid.xaml" />
+    <Page Remove="Views\Components\Explorer\FileItem.xaml" />
+    <Page Remove="Views\Components\Tracking\FilesPanel.xaml" />
+    <Page Remove="Views\Components\Tracking\PauseOverlay.xaml" />
+    <Page Remove="Views\Tracking\Tracking\FilesPanel.xaml" />
+    <Page Remove="Views\Tracking\Tracking\PauseOverlay.xaml" />
+    <Page Remove="Views\Explorer\ExplorerWindow.xaml" />
+    <Compile Remove="Views\Explorer\ExplorerWindow.xaml.cs" />
+    <Page Remove="Views\Shell\HeaderBar.xaml" />
+    <Compile Remove="Views\Shell\HeaderBar.xaml.cs" />
+    <Compile Remove="Views\ExplorerV2\Services\PhotoshopWorkflowService.cs" />
+    <Compile Remove="Views\ExplorerV2\Services\PhotoshopComCloser.cs" />
+    <Page Remove="Views\Dialogs\QuickControlsWindow.xaml" />
+    <Compile Remove="Views\Dialogs\QuickControlsWindow.xaml.cs" />
+    <Compile Remove="ViewModels\Windows\QuickControlsViewModel.cs" />
+    <Compile Remove="ViewModels\Tracking\MainViewModel.cs" />
+    <Compile Remove="Shared\Converters\HighlightToBrushConverter.cs" />
+    <Page Remove="Views\Dialogs\PauseReasonWindow.xaml" />
+    <Compile Remove="Views\Dialogs\PauseReasonWindow.xaml.cs" />
+    <Page Remove="Views\Dialogs\PauseOverlayWindow.xaml" />
+    <Compile Remove="Views\Dialogs\PauseOverlayWindow.xaml.cs" />
+    <Compile Remove="ViewModels\Tracking\PauseOverlayViewModel.cs" />
+    <Compile Remove="Shared\Services\DialogService.cs" />
+    <Compile Remove="Shared\Services\IDialogService.cs" />
+    <Page Remove="Views\Login\PasswordSetupWindow.xaml" />
+    <Compile Remove="Views\Login\PasswordSetupWindow.xaml.cs" />
+    <Compile Remove="Shared\Helpers\WindowStyleHelper.cs" />
+    <Compile Remove="Shared\Helpers\ResourcePathHelper.cs" />
+    <Compile Remove="Shared\Converters\HighlightToBrushConverter.cs" />
+    <Compile Remove="Shared\Converters\IntToBoolConverter.cs" />
+    <Compile Remove="Shared\Converters\RadioButtonMultiConverter.cs" />
+    <Page Remove="Views\ThumbGenerator\ThumbGeneratorView.xaml" />
+    <Compile Remove="Views\ThumbGenerator\ThumbGeneratorView.xaml.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Remove="Views\Explorer\**\*.xaml" />
+    <Compile Remove="Views\Explorer\**\*.cs" />
+    <Compile Remove="ViewModels\Explorer\**\*.cs" />
+    <Page Update="Views\Shell\Sidebar.xaml" />
+    <Page Update="Views\Settings\SettingsView.xaml" />
+    <Page Update="Views\Dashboard\DashboardView.xaml" />
+    <Page Update="Shared\Resources\Themes\Theme.xaml" />
+    <Page Update="Shared\Resources\Themes\Theme.Light.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+    <Resource Include="app_icon.ico" />
+  </ItemGroup>
+
+</Project>

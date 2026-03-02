@@ -1,0 +1,161 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- 
+    SCHL Studio Theme - Direct port of ui/styles/theme.py and ui/styles/colors.py
+    Matches Python app's exact color scheme for 100% visual parity
+    -->
+    
+    <!-- Brand Colors -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#7ea641"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#6d8f38"/>
+    
+    <!-- Status Colors -->
+    <SolidColorBrush x:Key="WarningBrush" Color="#FF9500"/>
+    <SolidColorBrush x:Key="WarningHoverBrush" Color="#FF8C00"/>
+    
+    <SolidColorBrush x:Key="DangerBrush" Color="#FF3B30"/>
+    <SolidColorBrush x:Key="DangerHoverBrush" Color="#FF2D55"/>
+    
+    <SolidColorBrush x:Key="WalkOutBrush" Color="#5856D6"/>
+    <SolidColorBrush x:Key="WalkOutHoverBrush" Color="#AF52DE"/>
+    
+    <SolidColorBrush x:Key="SkipBrush" Color="#8E8E93"/>
+    <SolidColorBrush x:Key="SkipHoverBrush" Color="#636366"/>
+    
+    <SolidColorBrush x:Key="SuccessBrush" Color="#7ea641"/>
+    
+    <!-- Backgrounds (Dark Mode) -->
+    <SolidColorBrush x:Key="BgMainBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="BgPrimaryBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="BgCardBrush" Color="#1C1C1E"/>
+    <SolidColorBrush x:Key="BgCardHoverBrush" Color="#2C2C2E"/>
+    <SolidColorBrush x:Key="BgTransparentBrush" Color="Transparent"/>
+    <SolidColorBrush x:Key="PanelBrush" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="HeaderBrush" Color="#252526"/>
+    <SolidColorBrush x:Key="DividerBrush" Color="#2D2D30"/>
+    <SolidColorBrush x:Key="HoverBrush" Color="#2A2A2A"/>
+    <SolidColorBrush x:Key="PressedBrush" Color="#333333"/>
+    
+    <!-- Text Colors -->
+    <SolidColorBrush x:Key="TextMainBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#666666"/>
+    <SolidColorBrush x:Key="TextWhiteBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TextBlackBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="TextPlaceholderBrush" Color="#8E8E93"/>
+    
+    <!-- Borders -->
+    <SolidColorBrush x:Key="BorderLightBrush" Color="#C7C7CC"/>
+    
+    <!-- Typography -->
+    <FontFamily x:Key="MainFontFamily">Segoe UI</FontFamily>
+    
+    <!-- Button Styles -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBlackBrush}"/>
+        <Setter Property="FontFamily" Value="{StaticResource MainFontFamily}"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Padding" Value="20,10"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="10"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" 
+                                        VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.5"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    
+    <Style x:Key="WarningButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+        <Setter Property="Background" Value="{StaticResource WarningBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextWhiteBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource WarningHoverBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    
+    <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+        <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextWhiteBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource DangerHoverBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    
+    <!-- TextBox Style -->
+    <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Background" Value="{StaticResource BgCardBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+        <Setter Property="FontFamily" Value="{StaticResource MainFontFamily}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderLightBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="10">
+                        <ScrollViewer x:Name="PART_ContentHost" 
+                                    Padding="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- PasswordBox Style -->
+    <Style x:Key="ModernPasswordBoxStyle" TargetType="PasswordBox">
+        <Setter Property="Background" Value="{StaticResource BgCardBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+        <Setter Property="FontFamily" Value="{StaticResource MainFontFamily}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderLightBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="PasswordBox">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="10">
+                        <ScrollViewer x:Name="PART_ContentHost" 
+                                    Padding="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- Label Style -->
+    <Style x:Key="ModernLabelStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}"/>
+        <Setter Property="FontFamily" Value="{StaticResource MainFontFamily}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+    
+</ResourceDictionary>

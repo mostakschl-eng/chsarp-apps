@@ -1,0 +1,94 @@
+<UserControl x:Class="SCHLStudio.App.Views.LiveTracking.Tabs.IdleTabView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/SCHLStudio.App;component/Views/LiveTracking/Shared/LiveTrackingStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,6,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource LiveCardStyle}" Margin="0,0,10,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="IDLE USERS" Style="{StaticResource LiveCardLabelStyle}" />
+                        <TextBlock Text="{Binding IdleTab.TotalIdleUsers}" Style="{StaticResource LiveCardValueStyle}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="&#xE7BA;" Style="{StaticResource LiveCardIconStyle}" Foreground="#007AFF" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource LiveCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="TOTAL IDLE TIME" Style="{StaticResource LiveCardLabelStyle}" />
+                        <TextBlock Text="{Binding IdleTab.TotalIdleDuration}" Style="{StaticResource LiveCardValueStyle}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="&#xE823;" Style="{StaticResource LiveCardIconStyle}" Foreground="#FF9500" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" CornerRadius="10" Padding="12,8" Margin="0,0,30,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="1.5*"/>
+                    <ColumnDefinition Width="1.5*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="USER" Style="{StaticResource LiveGridHeaderTextStyle}" Margin="6,0,0,0" />
+                <TextBlock Grid.Column="1" Text="FIRST LOGIN" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="IDLE TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="3" Text="STATUS" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <ListView Grid.Row="2"
+                  ItemsSource="{Binding IdleTab.IdleUsers}"
+                  Style="{StaticResource LiveListViewStyle}"
+                  ItemContainerStyle="{StaticResource LiveListViewItemStyle}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="{Binding UsernameDisplay}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="6,0,10,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding FirstLoginFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="{Binding IdleTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center" Foreground="#007AFF"/>
+                        <TextBlock Grid.Column="3" Text="{Binding Status}" Style="{StaticResource LiveRowBoldTextStyle}" TextAlignment="Center"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</UserControl>

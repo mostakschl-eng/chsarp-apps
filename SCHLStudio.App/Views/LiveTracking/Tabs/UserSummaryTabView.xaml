@@ -1,0 +1,454 @@
+<UserControl x:Class="SCHLStudio.App.Views.LiveTracking.Tabs.UserSummaryTabView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/SCHLStudio.App;component/Views/LiveTracking/Shared/LiveTrackingStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Clean employee list item - NO border -->
+            <Style x:Key="EmployeeListItemStyle" TargetType="ListViewItem">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="10,8" />
+                <Setter Property="Margin" Value="0,0,0,2" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListViewItem">
+                            <Border x:Name="ItemBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderThickness="0"
+                                    CornerRadius="6"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ItemBorder" Property="Background" Value="#F0F4FF" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="ItemBorder" Property="Background" Value="#E8F0FE" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Work log row with GREEN hover border (same as LiveListViewItemStyle) -->
+            <Style x:Key="WorkLogRowStyle" TargetType="ContentControl">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ContentControl">
+                            <Border x:Name="RowBorder"
+                                    Background="{DynamicResource BgCardBrush}"
+                                    CornerRadius="10"
+                                    Padding="14,12"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="1.5"
+                                    Margin="0,5,18,0"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Top margin for tab gap -->
+    <Grid Margin="0,6,0,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ═══════ Left: Employee list — NO grey border ═══════ -->
+        <Border Grid.Column="0" Background="Transparent" Padding="4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="EMPLOYEES" Style="{StaticResource LiveCardLabelStyle}" Margin="4,0,0,8" />
+
+                <!-- Search bar + Filter button -->
+                <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" CornerRadius="8" Background="#F5F6F8" BorderBrush="#E0E0E5" BorderThickness="1" Padding="2,0" Margin="0,0,6,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                       Foreground="#AAAAAA" VerticalAlignment="Center" Margin="6,0,4,0"/>
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding UserSummaryTab.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="Transparent" BorderThickness="0"
+                                     FontFamily="{StaticResource MainFontFamily}" FontSize="12"
+                                     Foreground="{DynamicResource TextMainBrush}"
+                                     Padding="4,6" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Filter button -->
+                    <ToggleButton x:Name="FilterToggle" Grid.Column="1" Background="Transparent" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border x:Name="Bd" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="6,5" Cursor="Hand">
+                                    <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                        <Setter TargetName="Bd" Property="Background" Value="#E8F0FE"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="#F0F4FF"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+
+                    <!-- Filter Popup -->
+                    <Popup IsOpen="{Binding IsChecked, ElementName=FilterToggle}" StaysOpen="False" Placement="Bottom" PlacementTarget="{Binding ElementName=FilterToggle}" HorizontalOffset="-180" VerticalOffset="4" AllowsTransparency="True">
+                        <Border Background="White" CornerRadius="10" BorderBrush="#E0E0E5" BorderThickness="1" Padding="14" MinWidth="240">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="12" Opacity="0.15" ShadowDepth="4" Direction="270"/>
+                            </Border.Effect>
+                            <StackPanel>
+                                <TextBlock Text="Date Filter" FontFamily="{StaticResource MainFontFamily}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMainBrush}" Margin="0,0,0,10"/>
+
+                                <TextBlock Text="FROM" FontFamily="{StaticResource MainFontFamily}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <DatePicker SelectedDate="{Binding UserSummaryTab.FilterDateFrom, Mode=TwoWay}" Width="200" Height="30" FontFamily="{StaticResource MainFontFamily}" FontSize="12" Margin="0,0,0,10"/>
+
+                                <TextBlock Text="TO" FontFamily="{StaticResource MainFontFamily}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <DatePicker SelectedDate="{Binding UserSummaryTab.FilterDateTo, Mode=TwoWay}" Width="200" Height="30" FontFamily="{StaticResource MainFontFamily}" FontSize="12" Margin="0,0,0,12"/>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="Clear" Command="{Binding UserSummaryTab.ClearFilterCommand}" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" FontFamily="{StaticResource MainFontFamily}" Padding="8,4" Cursor="Hand" Margin="0,0,6,0"/>
+                                    <Button Content="Apply" Command="{Binding UserSummaryTab.ApplyFilterCommand}" Style="{StaticResource PrimaryButtonStyle}" MinWidth="60" Height="28" FontSize="11" FontFamily="{StaticResource MainFontFamily}" Padding="10,2" Cursor="Hand"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
+
+                <!-- Employee list -->
+                <ListView Grid.Row="2"
+                          ItemsSource="{Binding UserSummaryTab.FilteredUsers}"
+                          SelectedItem="{Binding UserSummaryTab.SelectedUser, Mode=TwoWay}"
+                          Style="{StaticResource LiveListViewStyle}"
+                          ItemContainerStyle="{StaticResource EmployeeListItemStyle}"
+                          BorderThickness="0"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="#8E8E93"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding StatusText}" Value="Active">
+                                                    <Setter Property="Fill" Value="#34C759"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding EmployeeNameDisplay}"
+                                           FontFamily="{StaticResource MainFontFamily}"
+                                           FontSize="13" FontWeight="Medium"
+                                           Foreground="{DynamicResource TextMainBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Border>
+
+        <!-- ═══════ Right: Details for selected user ═══════ -->
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,6,0">
+            <StackPanel Margin="0,0,14,0">
+
+                <!-- 1) Summary Cards -->
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource LiveCardStyle}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <TextBlock Text="WORK" Style="{StaticResource LiveCardLabelStyle}" />
+                            <TextBlock Text="{Binding UserSummaryTab.SelectedUser.TotalWorkFormatted}" Style="{StaticResource LiveCardValueStyle}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource LiveCardStyle}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <TextBlock Text="PAUSE" Style="{StaticResource LiveCardLabelStyle}" />
+                            <TextBlock Text="{Binding UserSummaryTab.SelectedUser.TotalPauseFormatted}" Style="{StaticResource LiveCardValueStyle}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource LiveCardStyle}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <TextBlock Text="IDLE" Style="{StaticResource LiveCardLabelStyle}" />
+                            <TextBlock Text="{Binding UserSummaryTab.SelectedUser.IdleFormatted}" Style="{StaticResource LiveCardValueStyle}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Style="{StaticResource LiveCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="FILES" Style="{StaticResource LiveCardLabelStyle}" />
+                            <TextBlock Text="{Binding UserSummaryTab.SelectedUser.TotalFiles}" Style="{StaticResource LiveCardValueStyle}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 2) Session Info Bar — NO border, clean card -->
+                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="10" Padding="16,12" Margin="0,0,0,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="FIRST LOGIN" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Text="{Binding UserSummaryTab.SelectedUser.FirstLoginFormatted}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="0,4,0,0" FontSize="14"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="LAST LOGOUT" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Text="{Binding UserSummaryTab.SelectedUser.LastLogoutFormatted}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="0,4,0,0" FontSize="14"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="TOTAL DURATION TODAY" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Text="{Binding UserSummaryTab.SelectedUser.TotalDurationTodayFormatted}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="0,4,0,0" FontSize="14" Foreground="#007AFF"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 3) Pause Reasons — Header row, NO border -->
+                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="10" Margin="0,0,0,12" Padding="0">
+                    <StackPanel>
+                        <Grid Margin="14,12,14,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="1.5*"/>
+                                <ColumnDefinition Width="1.5*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="PAUSE REASON" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="1" Text="CLIENT" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="2" Text="WORK TYPE" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="3" Text="START TIME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="4" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="5" Text="TOTAL PAUSE" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="6" Text="PAUSE COUNT" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding UserSummaryTab.SelectedUserPauses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="14,10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*"/>
+                                                <ColumnDefinition Width="1.5*"/>
+                                                <ColumnDefinition Width="1.5*"/>
+                                                <ColumnDefinition Width="1*"/>
+                                                <ColumnDefinition Width="1*"/>
+                                                <ColumnDefinition Width="1*"/>
+                                                <ColumnDefinition Width="1*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                                                <Ellipse Width="6" Height="6" Fill="#FF9500" Margin="0,0,8,0"/>
+                                                <TextBlock Text="{Binding Reason}" Style="{StaticResource LiveFileTextStyle}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveFileTextStyle}" Margin="0,0,6,0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding WorkType}" Style="{StaticResource LiveFileTextStyle}" Margin="0,0,6,0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding StartTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding DurationFormatted}" Style="{StaticResource LiveFileTextStyle}" Foreground="#FF9500"/>
+                                            <TextBlock Grid.Column="6" Text="{Binding PauseCount}" Style="{StaticResource LiveFileTextStyle}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 4) Work Log Column Headers — NO border -->
+                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="10" Padding="14,10" Margin="0,0,18,6">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="36"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.0*"/>
+                            <ColumnDefinition Width="0.7*"/>
+                            <ColumnDefinition Width="0.9*"/>
+                            <ColumnDefinition Width="0.9*"/>
+                            <ColumnDefinition Width="0.9*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="1" Text="CLIENT" Style="{StaticResource LiveGridHeaderTextStyle}" Margin="6,0,0,0" />
+                        <TextBlock Grid.Column="2" Text="WORK TYPE" Style="{StaticResource LiveGridHeaderTextStyle}" Margin="6,0,0,0" />
+                        <TextBlock Grid.Column="3" Text="SHIFT" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="WORK" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="5" Text="PAUSE" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="6" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- Work log rows — GREEN HOVER BORDER like other tabs -->
+                <ItemsControl ItemsSource="{Binding UserSummaryTab.SelectedWorkLogs}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ContentControl Style="{StaticResource WorkLogRowStyle}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Main Row -->
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="36"/>
+                                            <ColumnDefinition Width="1.2*"/>
+                                            <ColumnDefinition Width="1.0*"/>
+                                            <ColumnDefinition Width="0.7*"/>
+                                            <ColumnDefinition Width="0.9*"/>
+                                            <ColumnDefinition Width="0.9*"/>
+                                            <ColumnDefinition Width="0.9*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <ToggleButton Grid.Column="0" IsChecked="{Binding IsExpanded, Mode=TwoWay}" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand">
+                                            <ToggleButton.Style>
+                                                <Style TargetType="ToggleButton">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="ToggleButton">
+                                                                <TextBlock x:Name="Icon" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#999999" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsChecked" Value="True">
+                                                                        <Setter TargetName="Icon" Property="Text" Value="&#xE70D;"/>
+                                                                        <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ToggleButton.Style>
+                                        </ToggleButton>
+
+                                        <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="6,0,10,0" />
+                                        <TextBlock Grid.Column="2" Text="{Binding WorkTypeDisplay}" Style="{StaticResource LiveRowTextStyle}" Margin="6,0,10,0" />
+                                        <TextBlock Grid.Column="3" Text="{Binding ShiftDisplay}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding TotalTimesFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center" FontWeight="SemiBold" Foreground="#34C759"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding PauseTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center" FontWeight="SemiBold" Foreground="#FF9500"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
+                                    </Grid>
+
+                                    <!-- Expanded: File Details — NO border -->
+                                    <Grid Grid.Row="1" Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}" Margin="0,12,0,4">
+                                        <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Margin="36,0,4,0" Padding="0">
+                                            <StackPanel>
+                                                <Grid Margin="12,12,12,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="3*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                        <ColumnDefinition Width="2*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="FILE NAME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                                                    <TextBlock Grid.Column="1" Text="STATUS" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                                                    <TextBlock Grid.Column="2" Text="TIME SPENT" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                                                    <TextBlock Grid.Column="3" Text="START TIME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                                                    <TextBlock Grid.Column="4" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                                                    <TextBlock Grid.Column="5" Text="REPORT" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                                                </Grid>
+                                                <ItemsControl ItemsSource="{Binding Files}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Padding="12,10">
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="3*"/>
+                                                                        <ColumnDefinition Width="1.2*"/>
+                                                                        <ColumnDefinition Width="1.2*"/>
+                                                                        <ColumnDefinition Width="1.2*"/>
+                                                                        <ColumnDefinition Width="1.2*"/>
+                                                                        <ColumnDefinition Width="2*"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBlock Grid.Column="0" Text="{Binding FileNameDisplay}" ToolTip="{Binding FileName}" Style="{StaticResource LiveFileTextStyle}" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
+                                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                        <Ellipse Width="7" Height="7" Margin="0,0,6,0" VerticalAlignment="Center">
+                                                                            <Ellipse.Style>
+                                                                                <Style TargetType="Ellipse">
+                                                                                    <Setter Property="Fill" Value="#8E8E93"/>
+                                                                                    <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding FileStatus}" Value="working"><Setter Property="Fill" Value="#34C759"/></DataTrigger>
+                                                                                        <DataTrigger Binding="{Binding FileStatus}" Value="done"><Setter Property="Fill" Value="#007AFF"/></DataTrigger>
+                                                                                        <DataTrigger Binding="{Binding FileStatus}" Value="paused"><Setter Property="Fill" Value="#FF9500"/></DataTrigger>
+                                                                                    </Style.Triggers>
+                                                                                </Style>
+                                                                            </Ellipse.Style>
+                                                                        </Ellipse>
+                                                                        <TextBlock Text="{Binding FileStatusDisplay}" Style="{StaticResource LiveFileTextStyle}"/>
+                                                                    </StackPanel>
+                                                                    <TextBlock Grid.Column="2" Text="{Binding TimeSpentFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
+                                                                    <TextBlock Grid.Column="3" Text="{Binding StartTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
+                                                                    <TextBlock Grid.Column="4" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
+                                                                    <TextBlock Grid.Column="5" Text="{Binding Report}" Style="{StaticResource LiveFileTextStyle}" TextTrimming="CharacterEllipsis"/>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+                            </ContentControl>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

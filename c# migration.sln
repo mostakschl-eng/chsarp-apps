@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "time-tracking-csharp", "time-tracking-csharp", "{E76FCA6B-E5BA-B4AD-3C59-8853F938A376}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCHLStudio.App", "SCHLStudio.App\SCHLStudio.App.csproj", "{9A6784BF-6C4C-7193-6732-FF6373CC59B5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9A6784BF-6C4C-7193-6732-FF6373CC59B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A6784BF-6C4C-7193-6732-FF6373CC59B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A6784BF-6C4C-7193-6732-FF6373CC59B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A6784BF-6C4C-7193-6732-FF6373CC59B5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9A6784BF-6C4C-7193-6732-FF6373CC59B5} = {E76FCA6B-E5BA-B4AD-3C59-8853F938A376}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F8158C37-66BE-4F75-964E-FDBDAC64B4E5}
+	EndGlobalSection
+EndGlobal

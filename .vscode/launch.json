@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug SCHLStudio.App",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/SCHLStudio.App/bin/Debug/net8.0-windows/SCHLStudio.App.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/SCHLStudio.App",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+bin/
+obj/
+**/bin/
+**/obj/
+*_wpftmp.csproj
+*.user
+*.suo
+.vs/

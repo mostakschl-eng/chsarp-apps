@@ -1,0 +1,47 @@
+<Window x:Class="SCHLStudio.App.Views.ExplorerV2.Dialogs.IdleWarningWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Idle"
+        Width="420"
+        Height="140"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Background="Transparent">
+
+    <Border Background="{DynamicResource BgCardBrush}"
+            BorderBrush="{DynamicResource DangerBrush}"
+            BorderThickness="2"
+            CornerRadius="12"
+            Padding="16">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="&#xE7BA;"
+                       FontFamily="Segoe MDL2 Assets"
+                       FontSize="26"
+                       Foreground="{DynamicResource DangerBrush}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,14,0" />
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="IDLE DETECTED"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextMainBrush}" />
+                <TextBlock Text="Tracking paused automatically. Move mouse or press any key to resume."
+                           Margin="0,6,0,0"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
