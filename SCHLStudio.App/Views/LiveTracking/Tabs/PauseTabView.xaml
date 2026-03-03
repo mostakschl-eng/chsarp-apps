@@ -1,7 +1,12 @@
 <UserControl x:Class="SCHLStudio.App.Views.LiveTracking.Tabs.PauseTabView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="Transparent">
+             Background="Transparent"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
+             TextOptions.TextFormattingMode="Display"
+             TextOptions.TextRenderingMode="ClearType"
+             TextOptions.TextHintingMode="Fixed">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -18,7 +23,7 @@
         </Grid.RowDefinitions>
 
         <!-- Summary Cards (icon on right-center, consistent with other tabs) -->
-        <Grid Grid.Row="0" Margin="0,6,0,16">
+        <Grid Grid.Row="0" Margin="0,6,30,16" UseLayoutRounding="True" SnapsToDevicePixels="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -36,7 +41,7 @@
                         <TextBlock Text="PAUSED NOW" Style="{StaticResource LiveCardLabelStyle}" />
                         <TextBlock Text="{Binding PauseTab.TotalPausedUsers}" Style="{StaticResource LiveCardValueStyle}" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="&#xE76E;" Style="{StaticResource LiveCardIconStyle}" Foreground="#FF3B30" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
+                    <TextBlock Grid.Column="1" Text="&#xE769;" Style="{StaticResource LiveCardIconStyle}" Foreground="#FF3B30" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
                 </Grid>
             </Border>
 
@@ -47,10 +52,10 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="TOTAL PAUSE TIME" Style="{StaticResource LiveCardLabelStyle}" />
-                        <TextBlock Text="{Binding PauseTab.TotalPauseTimeFormatted}" Style="{StaticResource LiveCardValueStyle}" />
+                        <TextBlock Text="WORKING NOW" Style="{StaticResource LiveCardLabelStyle}" />
+                        <TextBlock Text="{Binding PauseTab.TotalWorkingUsers}" Style="{StaticResource LiveCardValueStyle}" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="&#xE916;" Style="{StaticResource LiveCardIconStyle}" Foreground="#FF9500" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
+                    <TextBlock Grid.Column="1" Text="&#xE8EF;" Style="{StaticResource LiveCardIconStyle}" Foreground="#34C759" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
                 </Grid>
             </Border>
 
@@ -61,10 +66,10 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="AVG PAUSE / USER" Style="{StaticResource LiveCardLabelStyle}" />
-                        <TextBlock Text="{Binding PauseTab.AvgPauseTimeFormatted}" Style="{StaticResource LiveCardValueStyle}" />
+                        <TextBlock Text="TOTAL PAUSE" Style="{StaticResource LiveCardLabelStyle}" />
+                        <TextBlock Text="{Binding PauseTab.TotalPauseTimeFormatted}" Style="{StaticResource LiveCardValueStyle}" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="&#xE823;" Style="{StaticResource LiveCardIconStyle}" Foreground="#AF52DE" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
+                    <TextBlock Grid.Column="1" Text="&#xE916;" Style="{StaticResource LiveCardIconStyle}" Foreground="#FF9500" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
                 </Grid>
             </Border>
 
@@ -75,10 +80,10 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="TOP REASON" Style="{StaticResource LiveCardLabelStyle}" />
-                        <TextBlock Text="{Binding PauseTab.TopPauseReason}" Style="{StaticResource LiveCardValueStyle}" />
+                        <TextBlock Text="TOTAL WORKING TIME" Style="{StaticResource LiveCardLabelStyle}" />
+                        <TextBlock Text="{Binding PauseTab.TotalWorkingTimeFormatted}" Style="{StaticResource LiveCardValueStyle}" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="&#xE8D3;" Style="{StaticResource LiveCardIconStyle}" Foreground="#007AFF" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
+                    <TextBlock Grid.Column="1" Text="&#xE823;" Style="{StaticResource LiveCardIconStyle}" Foreground="#007AFF" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
                 </Grid>
             </Border>
         </Grid>

@@ -85,6 +85,8 @@
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="HeaderBorder" Property="Background" Value="{StaticResource BgCardBrush}"/>
+                                <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter TargetName="HeaderBorder" Property="BorderThickness" Value="1"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -192,14 +194,8 @@
                             </StackPanel>
                         </Grid>
 
-                        <Border Background="{StaticResource BgCardBrush}"
-                                BorderBrush="{StaticResource PrimaryBrush}"
-                                BorderThickness="1.5"
-                                CornerRadius="12"
-                                Margin="10,6,10,10"
-                                Padding="8">
-                            <ContentPresenter ContentSource="SelectedContent" />
-                        </Border>
+                        <ContentPresenter ContentSource="SelectedContent"
+                                          Margin="0" />
                     </DockPanel>
                 </ControlTemplate>
             </TabControl.Template>

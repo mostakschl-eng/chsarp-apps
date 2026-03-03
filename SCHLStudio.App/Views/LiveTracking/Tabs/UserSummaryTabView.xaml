@@ -51,7 +51,7 @@
                                     Padding="14,12"
                                     BorderBrush="Transparent"
                                     BorderThickness="1.5"
-                                    Margin="0,5,18,0"
+                                    Margin="0,5,0,0"
                                     SnapsToDevicePixels="True">
                                 <ContentPresenter />
                             </Border>
@@ -205,28 +205,28 @@
 
                     <Border Grid.Column="0" Style="{StaticResource LiveCardStyle}" Margin="0,0,10,0">
                         <StackPanel>
-                            <TextBlock Text="WORK" Style="{StaticResource LiveCardLabelStyle}" />
+                            <TextBlock Text="TOTAL WORK TIME" Style="{StaticResource LiveCardLabelStyle}" />
                             <TextBlock Text="{Binding UserSummaryTab.SelectedUser.TotalWorkFormatted}" Style="{StaticResource LiveCardValueStyle}" />
                         </StackPanel>
                     </Border>
 
                     <Border Grid.Column="1" Style="{StaticResource LiveCardStyle}" Margin="0,0,10,0">
                         <StackPanel>
-                            <TextBlock Text="PAUSE" Style="{StaticResource LiveCardLabelStyle}" />
+                            <TextBlock Text="TOTAL PAUSE TIME" Style="{StaticResource LiveCardLabelStyle}" />
                             <TextBlock Text="{Binding UserSummaryTab.SelectedUser.TotalPauseFormatted}" Style="{StaticResource LiveCardValueStyle}" />
                         </StackPanel>
                     </Border>
 
                     <Border Grid.Column="2" Style="{StaticResource LiveCardStyle}" Margin="0,0,10,0">
                         <StackPanel>
-                            <TextBlock Text="IDLE" Style="{StaticResource LiveCardLabelStyle}" />
+                            <TextBlock Text="TOTAL IDLE TIME" Style="{StaticResource LiveCardLabelStyle}" />
                             <TextBlock Text="{Binding UserSummaryTab.SelectedUser.IdleFormatted}" Style="{StaticResource LiveCardValueStyle}" />
                         </StackPanel>
                     </Border>
 
                     <Border Grid.Column="3" Style="{StaticResource LiveCardStyle}">
                         <StackPanel>
-                            <TextBlock Text="FILES" Style="{StaticResource LiveCardLabelStyle}" />
+                            <TextBlock Text="TOTAL COMPLETED FILES" Style="{StaticResource LiveCardLabelStyle}" />
                             <TextBlock Text="{Binding UserSummaryTab.SelectedUser.TotalFiles}" Style="{StaticResource LiveCardValueStyle}" />
                         </StackPanel>
                     </Border>
@@ -309,24 +309,26 @@
                 </Border>
 
                 <!-- 4) Work Log Column Headers — NO border -->
-                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="10" Padding="14,10" Margin="0,0,18,6">
+                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="10" Padding="14,10" Margin="0,0,0,6">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="36"/>
-                            <ColumnDefinition Width="1.2*"/>
-                            <ColumnDefinition Width="1.0*"/>
-                            <ColumnDefinition Width="0.7*"/>
-                            <ColumnDefinition Width="0.9*"/>
-                            <ColumnDefinition Width="0.9*"/>
-                            <ColumnDefinition Width="0.9*"/>
+                            <ColumnDefinition Width="1.3*"/>
+                            <ColumnDefinition Width="1.3*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                            <ColumnDefinition Width="0.8*"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="1" Text="CLIENT" Style="{StaticResource LiveGridHeaderTextStyle}" Margin="6,0,0,0" />
                         <TextBlock Grid.Column="2" Text="WORK TYPE" Style="{StaticResource LiveGridHeaderTextStyle}" Margin="6,0,0,0" />
                         <TextBlock Grid.Column="3" Text="SHIFT" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
-                        <TextBlock Grid.Column="4" Text="WORK" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
-                        <TextBlock Grid.Column="5" Text="PAUSE" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
-                        <TextBlock Grid.Column="6" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="WORK TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="5" Text="PAUSE TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="6" Text="START TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="7" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
                     </Grid>
                 </Border>
 
@@ -345,12 +347,13 @@
                                     <Grid Grid.Row="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="36"/>
-                                            <ColumnDefinition Width="1.2*"/>
-                                            <ColumnDefinition Width="1.0*"/>
-                                            <ColumnDefinition Width="0.7*"/>
-                                            <ColumnDefinition Width="0.9*"/>
-                                            <ColumnDefinition Width="0.9*"/>
-                                            <ColumnDefinition Width="0.9*"/>
+                                            <ColumnDefinition Width="1.3*"/>
+                                            <ColumnDefinition Width="1.3*"/>
+                                            <ColumnDefinition Width="0.8*"/>
+                                            <ColumnDefinition Width="0.8*"/>
+                                            <ColumnDefinition Width="0.8*"/>
+                                            <ColumnDefinition Width="0.8*"/>
+                                            <ColumnDefinition Width="0.8*"/>
                                         </Grid.ColumnDefinitions>
 
                                         <ToggleButton Grid.Column="0" IsChecked="{Binding IsExpanded, Mode=TwoWay}" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand">
@@ -373,12 +376,13 @@
                                             </ToggleButton.Style>
                                         </ToggleButton>
 
-                                        <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="6,0,10,0" />
-                                        <TextBlock Grid.Column="2" Text="{Binding WorkTypeDisplay}" Style="{StaticResource LiveRowTextStyle}" Margin="6,0,10,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="6,0,10,0" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="2" Text="{Binding WorkTypeDisplay}" Style="{StaticResource LiveRowTextStyle}" Margin="6,0,10,0" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Grid.Column="3" Text="{Binding ShiftDisplay}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
                                         <TextBlock Grid.Column="4" Text="{Binding TotalTimesFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center" FontWeight="SemiBold" Foreground="#34C759"/>
                                         <TextBlock Grid.Column="5" Text="{Binding PauseTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center" FontWeight="SemiBold" Foreground="#FF9500"/>
-                                        <TextBlock Grid.Column="6" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding StartTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="7" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
                                     </Grid>
 
                                     <!-- Expanded: File Details — NO border -->

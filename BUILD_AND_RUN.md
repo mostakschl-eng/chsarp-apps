@@ -47,6 +47,7 @@ dotnet run --project SCHLStudio.App --configuration Debug
 # One-liner for clean rebuild
 dotnet clean && dotnet restore && dotnet build --configuration Debug
 ```
+dotnet build "d:\Time Tracking - CRM\time-tracking-csharp\SCHLStudio.App\SCHLStudio.App.csproj" -c Debug
 
 ## 📦 Publish for Distribution
 

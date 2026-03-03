@@ -18,7 +18,7 @@
         </Grid.RowDefinitions>
 
         <!-- Summary Cards -->
-        <Grid Grid.Row="0" Margin="0,6,0,16">
+        <Grid Grid.Row="0" Margin="0,6,30,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -87,9 +87,9 @@
         <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" CornerRadius="10" Padding="12,8" Margin="0,0,30,6">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.6*"/>
-                    <ColumnDefinition Width="0.8*"/>
-                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="0.7*"/>
+                    <ColumnDefinition Width="2.5*"/>
+                    <ColumnDefinition Width="1.2*"/>
                     <ColumnDefinition Width="0.8*"/>
                     <ColumnDefinition Width="0.8*"/>
                     <ColumnDefinition Width="0.8*"/>
@@ -116,7 +116,7 @@
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,10,0">
                 <!-- Working Section -->
-                <TextBlock Text="WORKING CLIENTS" Style="{StaticResource LiveCardLabelStyle}" Foreground="#34C759" FontWeight="Bold" Margin="6,0,0,10" />
+                <TextBlock Text="WORKING CLIENTS" Style="{StaticResource LiveCardLabelStyle}" Foreground="#34C759" Margin="6,0,0,10" />
                 <ListView ItemsSource="{Binding ClientTab.WorkingClients}"
                           Style="{StaticResource LiveListViewStyle}"
                           ItemContainerStyle="{StaticResource LiveListViewItemStyle}"
@@ -125,9 +125,9 @@
                         <DataTemplate>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="1.6*"/>
-                                    <ColumnDefinition Width="0.8*"/>
-                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="0.7*"/>
+                                    <ColumnDefinition Width="2.5*"/>
+                                    <ColumnDefinition Width="1.2*"/>
                                     <ColumnDefinition Width="0.8*"/>
                                     <ColumnDefinition Width="0.8*"/>
                                     <ColumnDefinition Width="0.8*"/>
@@ -164,9 +164,9 @@
                         <DataTemplate>
                             <Grid Opacity="0.7">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="1.6*"/>
-                                    <ColumnDefinition Width="0.8*"/>
-                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="0.7*"/>
+                                    <ColumnDefinition Width="2.5*"/>
+                                    <ColumnDefinition Width="1.2*"/>
                                     <ColumnDefinition Width="0.8*"/>
                                     <ColumnDefinition Width="0.8*"/>
                                     <ColumnDefinition Width="0.8*"/>

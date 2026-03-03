@@ -206,12 +206,22 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
 
         private List<LiveTrackingSessionModel> ApplyDateFilter(List<LiveTrackingSessionModel> logs)
         {
-            if (!_filterDateFrom.HasValue && !_filterDateTo.HasValue)
-                return logs;
+            // Default behavior for User Summary: TODAY ONLY.
+            // If the user explicitly selects a date range, use that instead.
 
-            // Single date: if only one is set, use same for both
-            var from = (_filterDateFrom ?? _filterDateTo)?.Date ?? DateTime.MinValue;
-            var to = ((_filterDateTo ?? _filterDateFrom)?.Date ?? DateTime.MaxValue).AddDays(1);
+            DateTime from;
+            DateTime to;
+            if (!_filterDateFrom.HasValue && !_filterDateTo.HasValue)
+            {
+                from = DateTime.Today;
+                to = DateTime.Today.AddDays(1);
+            }
+            else
+            {
+                // Single date: if only one is set, use same for both
+                from = (_filterDateFrom ?? _filterDateTo)?.Date ?? DateTime.Today;
+                to = ((_filterDateTo ?? _filterDateFrom)?.Date ?? DateTime.Today).AddDays(1);
+            }
 
             return logs.Where(l =>
             {
@@ -243,6 +253,33 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
             List<LiveTrackingSessionModel> filteredWorkLogs,
             List<TrackerUserSessionModel> sessions)
         {
+            static double ClampDurationMinutesToToday(DateTime? firstLoginAt, DateTime? lastLogoutAt, bool isActive)
+            {
+                try
+                {
+                    if (!firstLoginAt.HasValue) return 0;
+
+                    var todayStart = DateTime.Today;
+                    var todayEnd = todayStart.AddDays(1);
+
+                    var startLocal = firstLoginAt.Value.ToLocalTime();
+                    var endLocal = isActive
+                        ? DateTime.Now
+                        : (lastLogoutAt?.ToLocalTime() ?? DateTime.Now);
+
+                    if (endLocal > todayEnd) endLocal = todayEnd;
+                    if (startLocal < todayStart) startLocal = todayStart;
+                    if (endLocal < startLocal) return 0;
+
+                    var mins = (endLocal - startLocal).TotalMinutes;
+                    return mins > 0 ? mins : 0;
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+
             var displayNameByUser = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var s in sessions)
             {
@@ -304,9 +341,24 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                     firstLogin = sess.FirstLoginAt == default ? null : sess.FirstLoginAt;
                     lastLogout = sess.LastLogoutAt == default ? null : sess.LastLogoutAt;
                     statusText = sess.IsActive ? "Active" : "Logout";
-                    totalDurationMinutes = sess.TotalDurationSeconds > 0
-                        ? sess.TotalDurationSeconds / 60.0
-                        : (sess.FirstLoginAt != default ? Math.Max(0, (DateTime.UtcNow - sess.FirstLoginAt.ToUniversalTime()).TotalMinutes) : 0);
+
+                    // Dashboard/session APIs may contain timestamps spanning multiple days.
+                    // User Summary must show TODAY ONLY, so clamp duration to today's window.
+                    var durationByTimes = ClampDurationMinutesToToday(firstLogin, lastLogout, sess.IsActive);
+
+                    // Fallback to backend-provided seconds if we can't compute from timestamps.
+                    if (durationByTimes > 0)
+                    {
+                        totalDurationMinutes = durationByTimes;
+                    }
+                    else if (sess.TotalDurationSeconds > 0)
+                    {
+                        totalDurationMinutes = sess.TotalDurationSeconds / 60.0;
+                    }
+                    else
+                    {
+                        totalDurationMinutes = 0;
+                    }
 
                     idleMinutes = Math.Max(0, totalDurationMinutes - totalWork - totalPause);
                 }

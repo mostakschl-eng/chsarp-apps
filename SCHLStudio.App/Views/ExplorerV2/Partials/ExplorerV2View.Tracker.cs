@@ -217,8 +217,28 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
-                if (_trackerSync is null || filePaths.Count == 0) return;
-                TrackerQueueQcStatus(filePaths, "paused");
+                if (_trackerSync is null) return;
+
+                // Always prefer the active snapshot (what the user actually started/resumed with).
+                // Merge current selection too, so newly-selected files are also updated.
+                var merged = new List<string>();
+                if (_activeTrackerFilePathsSnapshot.Count > 0)
+                {
+                    merged.AddRange(_activeTrackerFilePathsSnapshot);
+                }
+                if (filePaths != null && filePaths.Count > 0)
+                {
+                    merged.AddRange(filePaths);
+                }
+
+                var distinct = merged
+                    .Select(x => (x ?? string.Empty).Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (distinct.Count == 0) return;
+                TrackerQueueQcStatus(distinct, "pause");
             }
             catch (Exception ex)
             {
@@ -233,12 +253,29 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
-                if (_trackerSync is null || filePaths.Count == 0) return;
-                _activeTrackerFilePathsSnapshot = filePaths
+                if (_trackerSync is null) return;
+
+                // Prefer active snapshot; merge selection too.
+                var merged = new List<string>();
+                if (_activeTrackerFilePathsSnapshot.Count > 0)
+                {
+                    merged.AddRange(_activeTrackerFilePathsSnapshot);
+                }
+                if (filePaths != null && filePaths.Count > 0)
+                {
+                    merged.AddRange(filePaths);
+                }
+
+                var distinct = merged
                     .Select(x => (x ?? string.Empty).Trim())
                     .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
-                TrackerQueueQcStatus(filePaths, "working");
+
+                if (distinct.Count == 0) return;
+
+                _activeTrackerFilePathsSnapshot = distinct;
+                TrackerQueueQcStatus(distinct, "working");
             }
             catch (Exception ex)
             {
@@ -447,7 +484,11 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
-        private void QueueWorkDeltaAcrossActiveFiles(int totalElapsedSeconds, IReadOnlyList<string>? filesToExclude, IReadOnlyList<string>? activeSnapshotFilePaths = null)
+        private void QueueWorkDeltaAcrossActiveFiles(
+            int totalElapsedSeconds,
+            IReadOnlyList<string>? filesToExclude,
+            IReadOnlyList<string>? activeSnapshotFilePaths = null,
+            bool forceEvenIfPaused = false)
         {
             try
             {
@@ -456,7 +497,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     return;
                 }
 
-                if (_vm.IsPaused)
+                if (_vm.IsPaused && !forceEvenIfPaused)
                 {
                     return;
                 }
