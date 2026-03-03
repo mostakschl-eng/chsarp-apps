@@ -58,7 +58,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     JobListDividerColumn.Width = new GridLength(10);
 
                 if (JobListPanelColumn is not null)
-                    JobListPanelColumn.Width = new GridLength(2.5, GridUnitType.Star);
+                    JobListPanelColumn.Width = new GridLength(1.5, GridUnitType.Star);
 
                 if (JobListDivider is not null)
                     JobListDivider.Visibility = Visibility.Visible;
@@ -511,12 +511,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
-                try
-                {
-                    if (ClientCodeTextBox is not null)
-                        ClientCodeTextBox.Text = row.ClientCode ?? string.Empty;
-                }
-                catch (Exception ex) { LogSuppressedError("ExplorerV2View.JobListPanel", ex); }
+
 
                 if (string.IsNullOrWhiteSpace(row.FolderPath)) return;
                 if (!System.IO.Directory.Exists(row.FolderPath)) return;

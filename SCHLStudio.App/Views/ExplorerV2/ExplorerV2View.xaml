@@ -333,7 +333,7 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
-                    Width="360"
+                    Width="280"
                     Height="{StaticResource ControlHeightLg}"
                     CornerRadius="{StaticResource RadiusLg}"
                     Background="{DynamicResource BgCardBrush}"
@@ -341,7 +341,7 @@
                     BorderThickness="1"
                     Padding="{StaticResource PadBtnX}">
                 <Grid>
-                    <TextBox x:Name="ClientCodeTextBox"
+                    <TextBox x:Name="JlpSearchTextBox"
                              Height="{StaticResource ControlHeightLg}"
                              VerticalContentAlignment="Center"
                              Foreground="{DynamicResource TextMainBrush}"
@@ -350,11 +350,9 @@
                              Padding="0"
                              FontSize="14"
                              Text=""
-                             KeyDown="ClientCodeTextBox_KeyDown"
-                             LostFocus="ClientCodeTextBox_LostFocus" />
+                             TextChanged="JlpSearchTextBox_TextChanged" />
 
-                    <TextBlock x:Name="ClientCodePlaceholder"
-                               Text="Client Code Search"
+                    <TextBlock Text="Search Jobs..."
                                FontSize="14"
                                Foreground="{DynamicResource TextPlaceholderBrush}"
                                VerticalAlignment="Center"
@@ -366,8 +364,8 @@
                                 <Style.Triggers>
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding ElementName=ClientCodeTextBox, Path=Text}" Value="" />
-                                            <Condition Binding="{Binding ElementName=ClientCodeTextBox, Path=IsKeyboardFocusWithin}" Value="False" />
+                                            <Condition Binding="{Binding ElementName=JlpSearchTextBox, Path=Text}" Value="" />
+                                            <Condition Binding="{Binding ElementName=JlpSearchTextBox, Path=IsKeyboardFocusWithin}" Value="False" />
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Visibility" Value="Visible" />
                                     </MultiDataTrigger>
@@ -502,7 +500,7 @@
                 <ColumnDefinition x:Name="JobListDividerColumn" Width="0" />
                 <ColumnDefinition Width="3*" />
                 <ColumnDefinition Width="{StaticResource GapLg}" />
-                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="1.8*" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="2"
@@ -694,17 +692,17 @@
                                               Content="Work"
                                               Style="{StaticResource FilesFooterToggleButtonStyle}"
                                               Checked="FileFilterToggle_Checked"
-                                              Margin="0,0,18,0" />
+                                              Margin="0,0,8,0" />
                                 <ToggleButton x:Name="FilesProductionDoneButton"
                                               Content="Production Done"
                                               Style="{StaticResource FilesFooterToggleButtonStyle}"
                                               Checked="FileFilterToggle_Checked"
-                                              Margin="0,0,18,0" />
+                                              Margin="0,0,8,0" />
                                 <ToggleButton x:Name="FilesQc1DoneButton"
                                               Content="QC1 Done"
                                               Style="{StaticResource FilesFooterToggleButtonStyle}"
                                               Checked="FileFilterToggle_Checked"
-                                              Margin="0,0,18,0" />
+                                              Margin="0,0,8,0" />
                                 <ToggleButton x:Name="FilesQc2DoneButton"
                                               Content="QC2 Done"
                                               Style="{StaticResource FilesFooterToggleButtonStyle}"
@@ -714,13 +712,13 @@
                                 <Border Width="1"
                                         Height="26"
                                         Background="{DynamicResource DividerBrush}"
-                                        Margin="12,0,12,0"
+                                        Margin="6,0,6,0"
                                         VerticalAlignment="Center" />
 
                                 <Button x:Name="ReadyToUploadButton"
                                         Content="Ready To Upload"
                                         Style="{StaticResource HeaderButtonStyle}"
-                                        MinWidth="140"
+                                        MinWidth="110"
                                         Margin="0,0,0,0"
                                         Command="{Binding ReadyToUploadCommand}" />
                             </StackPanel>
@@ -926,7 +924,7 @@
 
                                 <Button x:Name="StartButton"
                                         Content="{Binding StartButtonText}"
-                                        MinWidth="56"
+                                        MinWidth="64"
                                         Background="{DynamicResource PrimaryBrush}"
                                         Foreground="{DynamicResource TextBlackBrush}"
                                         Style="{StaticResource ActionBarButtonStyle}"
@@ -935,14 +933,14 @@
 
                                 <Button x:Name="BreakButton"
                                         Content="Break"
-                                        MinWidth="56"
+                                        MinWidth="44"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding BreakCommand}"
                                         Margin="0,0,4,0" />
 
                                 <Button x:Name="FinishButton"
                                         Content="Finish"
-                                        MinWidth="56"
+                                        MinWidth="44"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding FinishCommand}"
                                         IsEnabled="{Binding IsFinishEnabled}"
@@ -950,7 +948,7 @@
 
                                 <Button x:Name="WalkOutButton"
                                         Content="Walk Out"
-                                        MinWidth="56"
+                                        MinWidth="44"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding WalkOutCommand}"
                                         IsEnabled="{Binding IsWalkOutEnabled}"
@@ -958,7 +956,7 @@
 
                                 <Button x:Name="SkipButton"
                                         Content="Skip"
-                                        MinWidth="56"
+                                        MinWidth="44"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding SkipCommand}" />
                         </StackPanel>
@@ -1092,48 +1090,21 @@
                     </Grid>
 
                     <!-- Filters row -->
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <WrapPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <ToggleButton x:Name="JlpRunningButton"  Content="RUNNING"    Height="26" MinWidth="70" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Click="JlpStatusButton_Click">
                             <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" /></Trigger><Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Bd" Property="BorderThickness" Value="1" /></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template>
                         </ToggleButton>
                         <ToggleButton x:Name="JlpQcButton"         Content="QC"          Height="26" MinWidth="50" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Margin="6,0,0,0" Click="JlpStatusButton_Click">
                             <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" /></Trigger><Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Bd" Property="BorderThickness" Value="1" /></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template>
                         </ToggleButton>
-                        <ToggleButton x:Name="JlpCorrectionButton" Content="CORRECTION"  Height="26" MinWidth="70" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Margin="6,0,0,0" Click="JlpStatusButton_Click">
+                        <ToggleButton x:Name="JlpCorrectionButton" Content="CORRECTION"  Height="26" MinWidth="90" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Margin="6,0,0,0" Click="JlpStatusButton_Click">
                             <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" /></Trigger><Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Bd" Property="BorderThickness" Value="1" /></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template>
                         </ToggleButton>
                         <ToggleButton x:Name="JlpTestButton"       Content="TEST"        Height="26" MinWidth="50" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Margin="6,0,0,0" Click="JlpStatusButton_Click">
                             <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" /></Trigger><Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Bd" Property="BorderThickness" Value="1" /></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template>
                         </ToggleButton>
 
-                        <TextBox x:Name="JlpSearchTextBox"
-                                 Width="140" Height="26"
-                                 Margin="8,0,0,0"
-                                 VerticalContentAlignment="Center"
-                                 Foreground="{DynamicResource TextMainBrush}"
-                                 Background="White"
-                                 BorderBrush="Transparent"
-                                 BorderThickness="1"
-                                 Padding="8,0"
-                                 FontSize="11"
-                                 FocusVisualStyle="{x:Null}"
-                                 TextChanged="JlpSearchTextBox_TextChanged">
-                            <TextBox.Template>
-                                <ControlTemplate TargetType="TextBox">
-                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
-                                        <Grid>
-                                            <ScrollViewer x:Name="PART_ContentHost" Padding="{TemplateBinding Padding}" />
-                                            <TextBlock x:Name="Wm" Text="Search..." Margin="{TemplateBinding Padding}" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.9" IsHitTestVisible="False" VerticalAlignment="Center" Visibility="Collapsed" />
-                                        </Grid>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="Text" Value=""><Setter TargetName="Wm" Property="Visibility" Value="Visible" /></Trigger>
-                                        <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /></Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </TextBox.Template>
-                        </TextBox>
-                    </StackPanel>
+                    </WrapPanel>
 
                     <!-- Job rows list -->
                     <ListView x:Name="JlpJobsList"

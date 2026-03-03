@@ -175,6 +175,10 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
 
             RunNonCritical(StartTrackerSyncWhenUserAvailable, "ExplorerV2.Loaded.StartTrackerSyncWhenUserAvailable");
+
+            // Auto-open the Job List panel on app load
+            RunNonCritical(OpenJobListPanel, "ExplorerV2.Loaded.OpenJobListPanel");
+            RunNonCriticalAsync(() => LoadJobListFromApiAsync(null), "ExplorerV2.Loaded.LoadJobList");
         }
 
         private void StartTrackerSyncWhenUserAvailable()

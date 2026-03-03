@@ -62,24 +62,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
                 }
 
-                try
-                {
-                    if (ClientCodeTextBox is not null)
-                    {
-                        if (_vm.HasSelectionMetaLock && !string.IsNullOrWhiteSpace(_vm.SelectionLockedClientCode))
-                        {
-                            ClientCodeTextBox.Text = _vm.SelectionLockedClientCode;
-                        }
-                        else if (!string.IsNullOrWhiteSpace(_vm.ActiveJobClientCode))
-                        {
-                            ClientCodeTextBox.Text = _vm.ActiveJobClientCode;
-                        }
-                    }
-                }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                }
+
 
                 _activeJobTasks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 if (!string.IsNullOrWhiteSpace(_vm.ActiveJobTaskRaw))
@@ -172,31 +155,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
-        private void ClientCodeTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (ClientCodeTextBox is null)
-                {
-                    return;
-                }
 
-                var t = (ClientCodeTextBox.Text ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(t))
-                {
-                    return;
-                }
-
-                if (!string.IsNullOrWhiteSpace(_vm.ActiveJobClientCode))
-                {
-                    ClientCodeTextBox.Text = _vm.ActiveJobClientCode;
-                }
-            }
-            catch (Exception ex_safe_log)
-            {
-                LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-            }
-        }
 
         private CancellationTokenSource? _jobListLoadCts;
 
@@ -358,133 +317,6 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
-        private void ClientCodeTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            try
-            {
-                if (e.Key != System.Windows.Input.Key.Enter)
-                {
-                    return;
-                }
 
-                var code = (ClientCodeTextBox.Text ?? string.Empty).Trim().Trim('"');
-                if (string.IsNullOrWhiteSpace(code))
-                {
-                    try
-                    {
-                        if (!string.IsNullOrWhiteSpace(_vm.ActiveJobClientCode) && ClientCodeTextBox is not null)
-                        {
-                            ClientCodeTextBox.Text = _vm.ActiveJobClientCode;
-                            e.Handled = true;
-                        }
-                    }
-                    catch (Exception ex_safe_log)
-                    {
-                        LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                    }
-
-                    try
-                    {
-                        var activeJobBaseDir = GetActiveJobFolderPath();
-
-                        if (!string.IsNullOrWhiteSpace(activeJobBaseDir) && Directory.Exists(activeJobBaseDir))
-                        {
-                            RefreshFileTilesForCurrentContext(activeJobBaseDir);
-                        }
-                    }
-                    catch (Exception ex_safe_log)
-                    {
-                        LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                    }
-
-                    return;
-                }
-
-                try
-                {
-                    if (int.TryParse(code, out var index) && index > 0 && index <= _jobListRows.Count)
-                    {
-                        var row = _jobListRows[index - 1];
-                        if (row is not null && !string.IsNullOrWhiteSpace(row.FolderPath) && Directory.Exists(row.FolderPath))
-                        {
-                            SetActiveJob(row.ClientCode, row.FolderPath, row.Task);
-                            RefreshFileTilesForCurrentContext(row.FolderPath);
-                            e.Handled = true;
-                            return;
-                        }
-                    }
-                }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                }
-
-                try
-                {
-                    var row = _jobListRows.FirstOrDefault(x => string.Equals(x.ClientCode, code, StringComparison.OrdinalIgnoreCase));
-                    if (row is not null && !string.IsNullOrWhiteSpace(row.FolderPath) && Directory.Exists(row.FolderPath))
-                    {
-                        SetActiveJob(row.ClientCode, row.FolderPath, row.Task);
-                        RefreshFileTilesForCurrentContext(row.FolderPath);
-                        e.Handled = true;
-                        return;
-                    }
-                }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                }
-
-                try
-                {
-                    if (File.Exists(code))
-                    {
-                        var dir = Path.GetDirectoryName(code);
-                        if (!string.IsNullOrWhiteSpace(dir))
-                        {
-                            code = dir;
-                        }
-                    }
-                }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                }
-
-                try
-                {
-                    var row = _jobListRows.FirstOrDefault(x =>
-                        !string.IsNullOrWhiteSpace(x?.FolderPath)
-                        && string.Equals(x.FolderPath.Trim(), code, StringComparison.OrdinalIgnoreCase));
-
-                    if (row is not null && !string.IsNullOrWhiteSpace(row.FolderPath) && Directory.Exists(row.FolderPath))
-                    {
-                        SetActiveJob(row.ClientCode, row.FolderPath, row.Task);
-                        RefreshFileTilesForCurrentContext(row.FolderPath);
-                        e.Handled = true;
-                        return;
-                    }
-                }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                }
-
-                SetActiveJob(null, null, null);
-                try
-                {
-                    _vm.ReplaceFileTiles(Array.Empty<FileTileItem>());
-                }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                }
-                e.Handled = true;
-            }
-            catch (Exception ex_safe_log)
-            {
-                LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-            }
-        }
     }
 }

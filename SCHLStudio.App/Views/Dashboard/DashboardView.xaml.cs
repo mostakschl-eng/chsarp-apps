@@ -45,5 +45,24 @@ namespace SCHLStudio.App.Views.Dashboard
             {
             }
         }
+
+        private void DashFilterToday_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            try
+            {
+                _viewModel.SelectedDate = DateTime.Today;
+                DashFilterToggle.IsChecked = false;
+            }
+            catch { }
+        }
+
+        private void DashFilterApply_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            try
+            {
+                DashFilterToggle.IsChecked = false;
+            }
+            catch { }
+        }
     }
 }
