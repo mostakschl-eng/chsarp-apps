@@ -231,6 +231,16 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     {
                         LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
                     }
+
+                    // Also refresh the inline Job List panel if open
+                    try
+                    {
+                        JlpRefreshAfterDataChange();
+                    }
+                    catch (Exception ex_safe_log)
+                    {
+                        LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
+                    }
                 });
             }
             catch (OperationCanceledException ex)
@@ -247,91 +257,21 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
-                var w = new JobListWindow(_jobListRows);
-                try
-                {
-                    _ = LoadJobListFromApiAsync(w);
-                }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                }
+                // Toggle the inline Job List panel instead of opening a separate window
+                ToggleJobListPanel();
 
-                w.ReloadRequested += () =>
+                // Kick off a fresh API load whenever the panel opens
+                if (_isJobListPanelOpen)
                 {
                     try
                     {
-                        _ = LoadJobListFromApiAsync(w);
+                        _ = LoadJobListFromApiAsync(null);
                     }
                     catch (Exception ex_safe_log)
                     {
                         LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
                     }
-                };
-                w.AddRequested += row =>
-                {
-                    try
-                    {
-                        try
-                        {
-                            if (ClientCodeTextBox is not null)
-                            {
-                                ClientCodeTextBox.Text = row.ClientCode ?? string.Empty;
-                            }
-                        }
-                        catch (Exception ex_safe_log)
-                        {
-                            LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                        }
-
-                        if (string.IsNullOrWhiteSpace(row.FolderPath))
-                        {
-                            return;
-                        }
-
-                        if (!Directory.Exists(row.FolderPath))
-                        {
-                            return;
-                        }
-
-                        SetActiveJob(row.ClientCode, row.FolderPath, row.Task);
-
-                        RefreshFileTilesForCurrentContext(row.FolderPath);
-                    }
-                    catch (Exception ex_safe_log)
-                    {
-                        LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                    }
-                };
-                w.RemoveRequested += rowToDrop =>
-                {
-                    try
-                    {
-                        SetActiveJob(null, null, null);
-                        try
-                        {
-                            _vm.ReplaceFileTiles(Array.Empty<FileTileItem>());
-                        }
-                        catch (Exception ex_safe_log)
-                        {
-                            LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                        }
-                    }
-                    catch (Exception ex_safe_log)
-                    {
-                        LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                    }
-                };
-                try
-                {
-                    w.Owner = Window.GetWindow(this);
                 }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                }
-
-                w.Show();
             }
             catch (Exception ex_safe_log)
             {

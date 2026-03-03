@@ -498,12 +498,14 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="JobListPanelColumn" Width="0" />
+                <ColumnDefinition x:Name="JobListDividerColumn" Width="0" />
                 <ColumnDefinition Width="3*" />
                 <ColumnDefinition Width="{StaticResource GapLg}" />
                 <ColumnDefinition Width="2*" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0"
+            <Border Grid.Column="2"
                     Background="Transparent"
                     BorderThickness="0"
                     CornerRadius="0"
@@ -772,13 +774,13 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Column="1"
+            <Border Grid.Column="3"
                     Width="1"
                     Background="{DynamicResource DividerBrush}"
                     HorizontalAlignment="Center"
                     Margin="0,8" />
 
-            <Border Grid.Column="2"
+            <Border Grid.Column="4"
                     Background="Transparent"
                     BorderThickness="0"
                     CornerRadius="0"
@@ -894,7 +896,7 @@
                                         Content="{Binding OpenWithButtonText}"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding OpenWithCommand}"
-                                        Margin="0,0,6,0">
+                                        Margin="0,0,4,0">
                                     <Button.ContextMenu>
                                         <ContextMenu x:Name="OpenWithMenu" Placement="Top">
                                             <ContextMenu.Template>
@@ -924,39 +926,39 @@
 
                                 <Button x:Name="StartButton"
                                         Content="{Binding StartButtonText}"
-                                        MinWidth="72"
+                                        MinWidth="56"
                                         Background="{DynamicResource PrimaryBrush}"
                                         Foreground="{DynamicResource TextBlackBrush}"
                                         Style="{StaticResource ActionBarButtonStyle}"
                                         Command="{Binding StartCommand}"
-                                        Margin="0,0,6,0" />
+                                        Margin="0,0,4,0" />
 
                                 <Button x:Name="BreakButton"
                                         Content="Break"
-                                        MinWidth="72"
+                                        MinWidth="56"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding BreakCommand}"
-                                        Margin="0,0,6,0" />
+                                        Margin="0,0,4,0" />
 
                                 <Button x:Name="FinishButton"
                                         Content="Finish"
-                                        MinWidth="72"
+                                        MinWidth="56"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding FinishCommand}"
                                         IsEnabled="{Binding IsFinishEnabled}"
-                                        Margin="0,0,6,0" />
+                                        Margin="0,0,4,0" />
 
                                 <Button x:Name="WalkOutButton"
                                         Content="Walk Out"
-                                        MinWidth="72"
+                                        MinWidth="56"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding WalkOutCommand}"
                                         IsEnabled="{Binding IsWalkOutEnabled}"
-                                        Margin="0,0,6,0" />
+                                        Margin="0,0,4,0" />
 
                                 <Button x:Name="SkipButton"
                                         Content="Skip"
-                                        MinWidth="72"
+                                        MinWidth="56"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding SkipCommand}" />
                         </StackPanel>
@@ -984,6 +986,294 @@
                             </StackPanel>
                         </Border>
                     </Grid>
+                </Grid>
+            </Border>
+
+            <!-- ═══ Job List Inline Panel (toggled by Job List button) ═══ -->
+            <Border x:Name="JobListDivider"
+                    Grid.Column="1"
+                    Width="1"
+                    Background="{DynamicResource DividerBrush}"
+                    HorizontalAlignment="Center"
+                    Margin="0,8"
+                    Visibility="Collapsed" />
+
+            <Border x:Name="JobListPanel"
+                    Grid.Column="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="8"
+                    Visibility="Collapsed">
+                <Grid Grid.IsSharedSizeScope="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="8" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="8" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header row -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Job List"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextMainBrush}"
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock x:Name="JlpCountsText"
+                                       Text=""
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="8,1,0,0"
+                                       VerticalAlignment="Center" />
+
+                            <Button x:Name="JlpReloadButton"
+                                    Width="26" Height="26"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Margin="6,0,0,0"
+                                    Click="JlpReloadButton_Click"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Button.RenderTransform>
+                                    <RotateTransform Angle="0" />
+                                </Button.RenderTransform>
+                                <Button.Resources>
+                                    <Storyboard x:Key="JlpReloadSpin">
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                         From="0" To="360" Duration="0:0:0.35" />
+                                    </Storyboard>
+                                </Button.Resources>
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard Storyboard="{StaticResource JlpReloadSpin}" />
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="Transparent"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <TextBlock Text="&#xE72C;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="14"
+                                           Foreground="{DynamicResource TextMainBrush}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center" />
+                            </Button>
+                        </StackPanel>
+
+                        <Button Grid.Column="1"
+                                Content="✕"
+                                Width="28" Height="28"
+                                Padding="0"
+                                Background="Transparent"
+                                Foreground="{DynamicResource TextMainBrush}"
+                                BorderThickness="0"
+                                Click="JlpCloseButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Cursor" Value="Hand" />
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#11000000" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
+
+                    <!-- Filters row -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ToggleButton x:Name="JlpRunningButton"  Content="RUNNING"    Height="26" MinWidth="70" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Click="JlpStatusButton_Click">
+                            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" /></Trigger><Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Bd" Property="BorderThickness" Value="1" /></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template>
+                        </ToggleButton>
+                        <ToggleButton x:Name="JlpQcButton"         Content="QC"          Height="26" MinWidth="50" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Margin="6,0,0,0" Click="JlpStatusButton_Click">
+                            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" /></Trigger><Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Bd" Property="BorderThickness" Value="1" /></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template>
+                        </ToggleButton>
+                        <ToggleButton x:Name="JlpCorrectionButton" Content="CORRECTION"  Height="26" MinWidth="70" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Margin="6,0,0,0" Click="JlpStatusButton_Click">
+                            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" /></Trigger><Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Bd" Property="BorderThickness" Value="1" /></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template>
+                        </ToggleButton>
+                        <ToggleButton x:Name="JlpTestButton"       Content="TEST"        Height="26" MinWidth="50" Padding="8,0" FontSize="11" Cursor="Hand" Background="{DynamicResource BgCardBrush}" Foreground="{DynamicResource TextMainBrush}" BorderThickness="0" FocusVisualStyle="{x:Null}" Margin="6,0,0,0" Click="JlpStatusButton_Click">
+                            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" /></Trigger><Trigger Property="IsChecked" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /><Setter TargetName="Bd" Property="BorderThickness" Value="1" /></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template>
+                        </ToggleButton>
+
+                        <TextBox x:Name="JlpSearchTextBox"
+                                 Width="140" Height="26"
+                                 Margin="8,0,0,0"
+                                 VerticalContentAlignment="Center"
+                                 Foreground="{DynamicResource TextMainBrush}"
+                                 Background="White"
+                                 BorderBrush="Transparent"
+                                 BorderThickness="1"
+                                 Padding="8,0"
+                                 FontSize="11"
+                                 FocusVisualStyle="{x:Null}"
+                                 TextChanged="JlpSearchTextBox_TextChanged">
+                            <TextBox.Template>
+                                <ControlTemplate TargetType="TextBox">
+                                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                                        <Grid>
+                                            <ScrollViewer x:Name="PART_ContentHost" Padding="{TemplateBinding Padding}" />
+                                            <TextBlock x:Name="Wm" Text="Search..." Margin="{TemplateBinding Padding}" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.9" IsHitTestVisible="False" VerticalAlignment="Center" Visibility="Collapsed" />
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="Text" Value=""><Setter TargetName="Wm" Property="Visibility" Value="Visible" /></Trigger>
+                                        <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" /></Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </TextBox.Template>
+                        </TextBox>
+                    </StackPanel>
+
+                    <!-- Job rows list -->
+                    <ListView x:Name="JlpJobsList"
+                              Grid.Row="4"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              Padding="0"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              ScrollViewer.CanContentScroll="False"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0,0,0,5" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListViewItem">
+                                            <Border x:Name="RowBd"
+                                                    Background="{DynamicResource BgCardBrush}"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="1"
+                                                    CornerRadius="10"
+                                                    Padding="10,8"
+                                                    MinHeight="38"
+                                                    SnapsToDevicePixels="True">
+                                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="RowBd" Property="Background" Value="{DynamicResource BgCardHoverBrush}" />
+                                                    <Setter TargetName="RowBd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="RowBd" Property="Background" Value="{DynamicResource HoverBrush}" />
+                                                    <Setter TargetName="RowBd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsAdded}" Value="True">
+                                                    <Setter TargetName="RowBd" Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+                                                </DataTrigger>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter TargetName="RowBd" Property="Opacity" Value="0.55" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="26" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Toggle add/remove button -->
+                                    <Button Grid.Column="0"
+                                            Width="22" Height="22"
+                                            Padding="0"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Click="JlpToggleRowButton_Click"
+                                            Tag="{Binding}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="Transparent"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" TextAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xEA3A;" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsAdded}" Value="True">
+                                                            <Setter Property="Text" Value="&#xE73E;" />
+                                                            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Button>
+
+                                    <!-- Client + folder stacked -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,6,0">
+                                        <TextBlock Text="{Binding ClientCode}"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextMainBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Cursor="Hand"
+                                                   MouseLeftButtonDown="JlpClientCodeText_MouseLeftButtonDown" />
+                                        <TextBlock Text="{Binding FolderPathShort}"
+                                                   ToolTip="{Binding FolderPath}"
+                                                   ToolTipService.InitialShowDelay="0"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Cursor="Hand"
+                                                   MouseLeftButtonDown="JlpFolderPathText_MouseLeftButtonDown" />
+                                    </StackPanel>
+
+                                    <!-- ET / NOF compact -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center">
+                                            <Run Text="ET:" /><Run Text="{Binding ET, Mode=OneWay}" />
+                                            <Run Text=" NOF:" /><Run Text="{Binding NOF, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <Button Width="22" Height="22"
+                                                Padding="0"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Cursor="Hand"
+                                                Margin="4,0,0,0"
+                                                Click="JlpCopyFolderPathButton_Click"
+                                                Tag="{Binding}">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="Transparent"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                            <TextBlock Text="&#xE8C8;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
                 </Grid>
             </Border>
         </Grid>

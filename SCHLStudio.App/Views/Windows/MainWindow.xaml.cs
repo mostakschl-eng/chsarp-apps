@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using SCHLStudio.App.Configuration;
 using SCHLStudio.App.Services.Api;
+using SCHLStudio.App.ViewModels.ExplorerV2;
 using SCHLStudio.App.ViewModels.LiveTracking;
 using SCHLStudio.App.ViewModels.Windows;
 using SCHLStudio.App.Views.Dialogs;
@@ -140,6 +141,23 @@ namespace SCHLStudio.App.Views.Windows
         {
             try
             {
+                // Block logout while user has active work timer running
+                try
+                {
+                    if (ExplorerV2?.DataContext is ExplorerV2ViewModel vm && vm.IsStarted)
+                    {
+                        System.Windows.MessageBox.Show(
+                            "Please finish your current work before logging out.",
+                            "Work In Progress",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        return;
+                    }
+                }
+                catch
+                {
+                }
+
                 try
                 {
                     LiveTrackingViewModel.Shared.StopTracking();
