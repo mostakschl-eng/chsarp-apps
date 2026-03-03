@@ -126,9 +126,18 @@ namespace SCHLStudio.App
             {
                 try
                 {
+                    StartupLog($"BuildConfiguration failed. Network config file may be missing/unreachable: {AppConfig.NETWORK_APPSETTINGS_FILE}. Error: {ex}");
+                }
+                catch
+                {
+                    NonCriticalLog.IncrementAndLog("App", "OnStartup.BuildConfiguration.StartupLog");
+                }
+
+                try
+                {
                     MessageBox.Show(
-                        $"Network configuration file is missing or not accessible.\n\nRequired: {AppConfig.NETWORK_APPSETTINGS_FILE}\n\n{ex.Message}",
-                        "Configuration Error",
+                        "Cannot connect to the database configuration. Please ensure you are connected to the company network or contact the administrator.",
+                        "Connection Error",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -166,7 +175,7 @@ namespace SCHLStudio.App
             if (string.IsNullOrWhiteSpace(apiBaseUrl))
             {
                 MessageBox.Show(
-                    "API URL is not configured.\n\nPlease contact admin to set ApiSettings:BaseUrl in the shared appsettings.json.",
+                    "API URL is not configured.\n\nPlease contact admin to verify the connection settings.",
                     "Configuration Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

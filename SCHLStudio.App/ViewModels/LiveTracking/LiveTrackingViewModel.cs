@@ -619,8 +619,11 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                                     if (prev != null)
                                     {
                                         var prevStatus = (prev.FileStatus ?? string.Empty).Trim();
+                                        var topIsPaused = string.Equals(topStatus, "pause", StringComparison.OrdinalIgnoreCase)
+                                            || string.Equals(topStatus, "paused", StringComparison.OrdinalIgnoreCase);
+
                                         if (IsWorkingStatusLocal(prevStatus)
-                                            && (string.Equals(topStatus, "paused", StringComparison.OrdinalIgnoreCase)
+                                            && (topIsPaused
                                                 || string.Equals(topStatus, "done", StringComparison.OrdinalIgnoreCase)))
                                         {
                                             fStatus = topStatus;

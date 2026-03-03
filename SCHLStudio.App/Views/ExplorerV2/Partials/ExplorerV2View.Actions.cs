@@ -12,6 +12,14 @@ namespace SCHLStudio.App.Views.ExplorerV2
     {
         private void ExecuteStartWorkflowFromVm()
         {
+            if (!_vm.IsStarted)
+            {
+                if (!PrepareSelectionForStartAndLockMeta())
+                {
+                    return;
+                }
+            }
+
             _workflowService.HandleStartButtonClick(
                 getIsStarted: () => _vm.IsStarted,
                 setIsStarted: v => _vm.IsStarted = v,
@@ -66,6 +74,143 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     _vm.IsWalkOutEnabled = enabled;
                     _vm.IsSkipEnabled = enabled;
                 });
+        }
+
+        private bool PrepareSelectionForStartAndLockMeta()
+        {
+            try
+            {
+                var workType = (WorkTypeButton?.Content as string) ?? string.Empty;
+                var tasks = GetCheckedTasksForDrop();
+                if (!EnsureWorkTypeAndTasksSelectedForDrop(workType, tasks))
+                {
+                    return false;
+                }
+
+                var selectedPaths = _vm.SelectedFiles
+                    .Select(x => (x?.FullPath ?? string.Empty).Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToArray();
+
+                if (selectedPaths.Length == 0)
+                {
+                    return false;
+                }
+
+                var wt = GetCurrentWorkTypeInfo();
+                var wtCtx = new WorkTypeDropContext
+                {
+                    Name = wt.Name,
+                    IsProduction = wt.IsProduction,
+                    IsQc = wt.IsQc,
+                    IsQc1 = wt.IsQc1,
+                    IsQcAc = wt.IsQcAc,
+                    IsTestFile = wt.IsTestFile,
+                    IsAdditional = wt.IsAdditional,
+                    IsShared = wt.IsShared,
+                    IsTranning = wt.IsTranning
+                };
+
+                var requiresBaseDir = _dragDropService.RequiresBaseDirForDrop(wtCtx);
+                var baseDir = ResolveBaseDirForDrop(requiresBaseDir);
+                if (requiresBaseDir && string.IsNullOrWhiteSpace(baseDir))
+                {
+                    return false;
+                }
+
+                if (!EnsureDroppedPathsUnderBaseDir(baseDir, selectedPaths))
+                {
+                    return false;
+                }
+
+                var rawDisplayName = (SCHLStudio.App.Configuration.AppConfig.CurrentDisplayName ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(rawDisplayName))
+                {
+                    rawDisplayName = FileOperationHelper.GetAppCurrentUser(this);
+                }
+
+                var userNameSafe = ExplorerV2DragDropService.GetSafeRealNameForDrop(rawDisplayName);
+                var movedSourcePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var removeFromTiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                var movedRows = _dragDropService.BuildDropRows(
+                    selectedPaths,
+                    wtCtx,
+                    userNameSafe,
+                    movedSourcePaths,
+                    removeFromTiles);
+
+                if (movedRows.Count == 0)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Unable to prepare selected files for start.",
+                        "SCHL App",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return false;
+                }
+
+                _vm.SelectedFiles.Clear();
+                _vm.SelectedFilePaths.Clear();
+
+                var serial = 1;
+                foreach (var row in movedRows)
+                {
+                    if (row == null)
+                    {
+                        continue;
+                    }
+
+                    var path = (row.FullPath ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(path))
+                    {
+                        continue;
+                    }
+
+                    if (_vm.SelectedFilePaths.Add(path))
+                    {
+                        row.Serial = serial++;
+                        _vm.SelectedFiles.Add(row);
+                    }
+                }
+
+                if (_vm.SelectedFiles.Count == 0)
+                {
+                    return false;
+                }
+
+                if ((wt.IsProduction || wt.IsQc) && !string.IsNullOrWhiteSpace(baseDir) && Directory.Exists(baseDir))
+                {
+                    RefreshFileTilesForCurrentContext(baseDir);
+                }
+
+                int? etValue = null;
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(_vm.ActiveJobClientCode))
+                    {
+                        etValue = _jobListRows
+                            .FirstOrDefault(x =>
+                                string.Equals(x.ClientCode, _vm.ActiveJobClientCode, StringComparison.OrdinalIgnoreCase)
+                                && string.Equals(x.FolderPath, _vm.ActiveJobFolderPath, StringComparison.OrdinalIgnoreCase))
+                            ?.ET;
+                    }
+                }
+                catch
+                {
+                    etValue = null;
+                }
+
+                _vm.LockSelectionMeta(_vm.ActiveJobClientCode, workType, tasks, etValue);
+                UpdateSelectedFilesMetaText();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogSuppressedError("PrepareSelectionForStartAndLockMeta", ex);
+                return false;
+            }
         }
 
 

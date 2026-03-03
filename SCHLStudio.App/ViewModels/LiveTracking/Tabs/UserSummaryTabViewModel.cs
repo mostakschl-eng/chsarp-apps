@@ -24,6 +24,9 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
         private readonly ObservableCollection<PauseDetailModel> _selectedUserPauses = new();
         public ReadOnlyObservableCollection<PauseDetailModel> SelectedUserPauses { get; }
 
+        private readonly ObservableCollection<string> _selectedUserAllPauseReasons = new();
+        public ReadOnlyObservableCollection<string> SelectedUserAllPauseReasons { get; }
+
         // ─── Search ───
         private string _searchText = string.Empty;
         public string SearchText
@@ -76,6 +79,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
             FilteredUsers = new ReadOnlyObservableCollection<UserSummaryRowModel>(_filteredUsers);
             SelectedWorkLogs = new ReadOnlyObservableCollection<LiveTrackingSessionModel>(_selectedWorkLogs);
             SelectedUserPauses = new ReadOnlyObservableCollection<PauseDetailModel>(_selectedUserPauses);
+            SelectedUserAllPauseReasons = new ReadOnlyObservableCollection<string>(_selectedUserAllPauseReasons);
             ApplyFilterCommand = new RelayCommand(_ => RebuildAll());
             ClearFilterCommand = new RelayCommand(_ => ClearFilter());
         }
@@ -170,6 +174,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
             {
                 _selectedWorkLogs.Clear();
                 _selectedUserPauses.Clear();
+                _selectedUserAllPauseReasons.Clear();
                 if (_selectedUser == null) return;
 
                 var userKey = _selectedUser.UserKey;
@@ -183,12 +188,34 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                 foreach (var wl in userLogs)
                     _selectedWorkLogs.Add(wl);
 
-                // Build pause details for this user
+                var seenReasons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var reason in userLogs
+                    .SelectMany(l => l.PauseReasons ?? new List<string>())
+                    .Where(r => !string.IsNullOrWhiteSpace(r))
+                    .Select(r => r.Trim()))
+                {
+                    if (seenReasons.Add(reason))
+                    {
+                        _selectedUserAllPauseReasons.Add(reason);
+                    }
+                }
+
+                // Build pause details per pause session (keep client/work/pause-time row granularity)
                 foreach (var wl in userLogs.Where(l => l.PauseCount > 0 || l.PauseTime > 0))
                 {
+                    var pauseReasons = (wl.PauseReasons ?? new List<string>())
+                        .Where(r => !string.IsNullOrWhiteSpace(r))
+                        .Select(r => r.Trim())
+                        .ToList();
+
+                    var reasonText = !string.IsNullOrWhiteSpace(wl.LatestPauseReason) && wl.LatestPauseReason != "—"
+                        ? wl.LatestPauseReason
+                        : (pauseReasons.FirstOrDefault() ?? "—");
+
                     _selectedUserPauses.Add(new PauseDetailModel
                     {
-                        Reason = wl.LatestPauseReason ?? "—",
+                        Reason = reasonText,
+                        PauseReasons = pauseReasons,
                         ClientCode = wl.ClientCode ?? "—",
                         WorkType = wl.WorkTypeDisplay ?? "—",
                         StartTime = wl.CreatedAt,
@@ -206,12 +233,22 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
 
         private List<LiveTrackingSessionModel> ApplyDateFilter(List<LiveTrackingSessionModel> logs)
         {
-            if (!_filterDateFrom.HasValue && !_filterDateTo.HasValue)
-                return logs;
+            // Default behavior for User Summary: TODAY ONLY.
+            // If the user explicitly selects a date range, use that instead.
 
-            // Single date: if only one is set, use same for both
-            var from = (_filterDateFrom ?? _filterDateTo)?.Date ?? DateTime.MinValue;
-            var to = ((_filterDateTo ?? _filterDateFrom)?.Date ?? DateTime.MaxValue).AddDays(1);
+            DateTime from;
+            DateTime to;
+            if (!_filterDateFrom.HasValue && !_filterDateTo.HasValue)
+            {
+                from = DateTime.Today;
+                to = DateTime.Today.AddDays(1);
+            }
+            else
+            {
+                // Single date: if only one is set, use same for both
+                from = (_filterDateFrom ?? _filterDateTo)?.Date ?? DateTime.Today;
+                to = ((_filterDateTo ?? _filterDateFrom)?.Date ?? DateTime.Today).AddDays(1);
+            }
 
             return logs.Where(l =>
             {
@@ -243,6 +280,33 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
             List<LiveTrackingSessionModel> filteredWorkLogs,
             List<TrackerUserSessionModel> sessions)
         {
+            static double ClampDurationMinutesToToday(DateTime? firstLoginAt, DateTime? lastLogoutAt, bool isActive)
+            {
+                try
+                {
+                    if (!firstLoginAt.HasValue) return 0;
+
+                    var todayStart = DateTime.Today;
+                    var todayEnd = todayStart.AddDays(1);
+
+                    var startLocal = firstLoginAt.Value.ToLocalTime();
+                    var endLocal = isActive
+                        ? DateTime.Now
+                        : (lastLogoutAt?.ToLocalTime() ?? DateTime.Now);
+
+                    if (endLocal > todayEnd) endLocal = todayEnd;
+                    if (startLocal < todayStart) startLocal = todayStart;
+                    if (endLocal < startLocal) return 0;
+
+                    var mins = (endLocal - startLocal).TotalMinutes;
+                    return mins > 0 ? mins : 0;
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+
             var displayNameByUser = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var s in sessions)
             {
@@ -291,7 +355,9 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                 var logs = workLogsByUser.TryGetValue(key, out var list) ? list : new List<LiveTrackingSessionModel>();
                 var totalWork = logs.Sum(l => l.TotalTimes);
                 var totalPause = logs.Sum(l => l.PauseTime);
-                var totalFiles = logs.SelectMany(l => l.Files).Count();
+                var completedFiles = logs
+                    .SelectMany(l => l.Files)
+                    .Count(f => f != null && string.Equals(f.FileStatus, "done", StringComparison.OrdinalIgnoreCase));
 
                 double idleMinutes = 0;
                 DateTime? firstLogin = null;
@@ -304,9 +370,24 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                     firstLogin = sess.FirstLoginAt == default ? null : sess.FirstLoginAt;
                     lastLogout = sess.LastLogoutAt == default ? null : sess.LastLogoutAt;
                     statusText = sess.IsActive ? "Active" : "Logout";
-                    totalDurationMinutes = sess.TotalDurationSeconds > 0
-                        ? sess.TotalDurationSeconds / 60.0
-                        : (sess.FirstLoginAt != default ? Math.Max(0, (DateTime.UtcNow - sess.FirstLoginAt.ToUniversalTime()).TotalMinutes) : 0);
+
+                    // Dashboard/session APIs may contain timestamps spanning multiple days.
+                    // User Summary must show TODAY ONLY, so clamp duration to today's window.
+                    var durationByTimes = ClampDurationMinutesToToday(firstLogin, lastLogout, sess.IsActive);
+
+                    // Fallback to backend-provided seconds if we can't compute from timestamps.
+                    if (durationByTimes > 0)
+                    {
+                        totalDurationMinutes = durationByTimes;
+                    }
+                    else if (sess.TotalDurationSeconds > 0)
+                    {
+                        totalDurationMinutes = sess.TotalDurationSeconds / 60.0;
+                    }
+                    else
+                    {
+                        totalDurationMinutes = 0;
+                    }
 
                     idleMinutes = Math.Max(0, totalDurationMinutes - totalWork - totalPause);
                 }
@@ -318,7 +399,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                     TotalWorkMinutes = totalWork,
                     TotalPauseMinutes = totalPause,
                     IdleMinutes = idleMinutes,
-                    TotalFiles = totalFiles,
+                    TotalFiles = completedFiles,
                     FirstLoginAt = firstLogin,
                     LastLogoutAt = lastLogout,
                     TotalDurationTodayMinutes = totalDurationMinutes,

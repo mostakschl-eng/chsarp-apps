@@ -20,9 +20,31 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
+                var previousClient = (_vm.ActiveJobClientCode ?? string.Empty).Trim();
+                var previousFolder = (_vm.ActiveJobFolderPath ?? string.Empty).Trim();
+
+                var jobChanged = false;
+
                 _vm.ActiveJobClientCode = string.IsNullOrWhiteSpace(clientCode) ? null : clientCode.Trim();
                 _vm.ActiveJobFolderPath = string.IsNullOrWhiteSpace(folderPath) ? null : folderPath.Trim();
                 _vm.ActiveJobTaskRaw = string.IsNullOrWhiteSpace(taskRaw) ? null : taskRaw.Trim();
+
+                try
+                {
+                    var currentClient = (_vm.ActiveJobClientCode ?? string.Empty).Trim();
+                    var currentFolder = (_vm.ActiveJobFolderPath ?? string.Empty).Trim();
+                    jobChanged = !string.Equals(previousClient, currentClient, StringComparison.OrdinalIgnoreCase)
+                        || !string.Equals(previousFolder, currentFolder, StringComparison.OrdinalIgnoreCase);
+
+                    if (!_vm.IsStarted && jobChanged && _vm.SelectedFiles.Count > 0)
+                    {
+                        _vm.ClearSelection();
+                    }
+                }
+                catch (Exception ex_safe_log)
+                {
+                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
+                }
 
                 try
                 {
@@ -84,8 +106,65 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     }
                 }
 
+                try
+                {
+                    if (!_vm.IsStarted && jobChanged)
+                    {
+                        ApplyActiveJobTasksToMenuSelections();
+                        UpdateTaskButtonHeader();
+                    }
+                }
+                catch (Exception ex_safe_log)
+                {
+                    LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
+                }
+
                 UpdateTaskMenuActiveHighlight();
                 UpdateSelectedFilesMetaText();
+            }
+            catch (Exception ex_safe_log)
+            {
+                LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
+            }
+        }
+
+        private void ApplyActiveJobTasksToMenuSelections()
+        {
+            try
+            {
+                if (TaskMenu is null)
+                {
+                    return;
+                }
+
+                foreach (var mi in TaskMenu.Items.OfType<MenuItem>())
+                {
+                    if (mi is null)
+                    {
+                        continue;
+                    }
+
+                    mi.IsChecked = false;
+                }
+
+                if (_activeJobTasks.Count == 0)
+                {
+                    return;
+                }
+
+                foreach (var mi in TaskMenu.Items.OfType<MenuItem>())
+                {
+                    if (mi is null)
+                    {
+                        continue;
+                    }
+
+                    var header = (mi.Header?.ToString() ?? string.Empty).Trim();
+                    if (!string.IsNullOrWhiteSpace(header) && _activeJobTasks.Contains(header))
+                    {
+                        mi.IsChecked = true;
+                    }
+                }
             }
             catch (Exception ex_safe_log)
             {

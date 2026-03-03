@@ -114,24 +114,10 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 var movedSourcePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                var removeFromTiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                var rawDisplayName = (SCHLStudio.App.Configuration.AppConfig.CurrentDisplayName ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(rawDisplayName))
-                {
-                    rawDisplayName = FileOperationHelper.GetAppCurrentUser(this);
-                }
-                var userNameSafe = ExplorerV2DragDropService.GetSafeRealNameForDrop(rawDisplayName);
-
                 List<SelectedFileRow> toAddRows;
                 try
                 {
-                    toAddRows = await Task.Run(() => _dragDropService.BuildDropRows(
-                        paths,
-                        wtCtx,
-                        userNameSafe,
-                        movedSourcePaths,
-                        removeFromTiles));
+                    toAddRows = await Task.Run(() => _dragDropService.BuildTemporaryDropRows(paths));
                 }
                 catch
                 {
@@ -157,28 +143,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 {
                     if (added)
                     {
-                        if ((wt.IsProduction || wt.IsQc) && !string.IsNullOrWhiteSpace(baseDir) && Directory.Exists(baseDir))
-                        {
-                            RefreshFileTilesForCurrentContext(baseDir);
-                        }
-                        else if (removeFromTiles.Count > 0)
-                        {
-                            try
-                            {
-                                for (var i = _vm.FileTiles.Count - 1; i >= 0; i--)
-                                {
-                                    var p = (_vm.FileTiles[i]?.FullPath ?? string.Empty).Trim();
-                                    if (!string.IsNullOrWhiteSpace(p) && removeFromTiles.Contains(p))
-                                    {
-                                        _vm.FileTiles.RemoveAt(i);
-                                    }
-                                }
-                            }
-                            catch (Exception ex_safe_log)
-                            {
-                                LogSuppressedError("ExplorerV2View.DragDrop", ex_safe_log);
-                            }
-                        }
+                        // Temporary drop only: no move/copy operation and no tile mutation until Start.
                     }
                 }
                 catch (Exception ex_safe_log)

@@ -47,6 +47,7 @@ dotnet run --project SCHLStudio.App --configuration Debug
 # One-liner for clean rebuild
 dotnet clean && dotnet restore && dotnet build --configuration Debug
 ```
+dotnet build "d:\Time Tracking - CRM\time-tracking-csharp\SCHLStudio.App\SCHLStudio.App.csproj" -c Debug
 
 ## 📦 Publish for Distribution
 
@@ -372,3 +373,39 @@ LoadDataAsync
 
 Comment
 Ctrl+Alt+M
+
+
+Looking at your LiveTrackingViewModel, here's what I see:
+
+🔴 Real Issues
+1. _ = LoadDataAsync() called multiple times redundantly
+In ApplySingleDateCommand, you call SelectedDate = date.Date which already triggers LoadDataAsync() via the setter — then you call _ = LoadDataAsync() again right after. Double load on every date change.
+2. _loadLock.Wait(0) silently skips loads
+If a load is in progress and the timer fires, it just skips. Fine for the polling timer, but if the user changes a filter while loading, they get stale data with no feedback. No retry, no queue.
+3. Empty catch {} blocks in the UI timer
+csharp_uiRefreshTimer.Tick += (s, e) =>
+{
+    try { try { ... } catch { } }
+    catch { }
+};
+Nested try/catch swallowing everything silently. If NotifyLiveTick() or ApplyGlobalFilters() throws, you'll never know.
+4. Debug.WriteLine($"... {ex.Message}") in LoadDataAsync
+You already know this one — loses the stack trace. Should be {ex}.
+
+🟡 Real-time Specific Concerns
+5. OnTrackerUpdated does linear search every update
+csharpvar session = _allData.FirstOrDefault(s => ...)
+If you have 50+ users with frequent socket updates, this scans the full list every tick. For a real-time dashboard this adds up. A Dictionary keyed by employee+shift+folder would be faster.
+6. IsWorkingStatusTop defined twice as local functions
+Same function defined inside OnTrackerUpdated as both IsWorkingStatusTop and IsWorkingStatusLocal — they do the exact same thing. One private method on the class is enough.
+7. Socket handlers don't check if the selected date matches today
+If user is viewing yesterday's data, socket updates for today still mutate _allData and call ApplyGlobalFilters() — so yesterday's view can get polluted with today's live events.
+
+🟢 What's Actually Good
+
+Semaphore on LoadDataAsync — correct
+ShouldReloadLiveSnapshot() before polling — smart
+Preserving previous data when snapshot returns 0 results — protects against flicker
+Restoring filter selections after reload — good UX detail
+MergeWorkLogs comparing UpdatedAt before replacing — solid
+

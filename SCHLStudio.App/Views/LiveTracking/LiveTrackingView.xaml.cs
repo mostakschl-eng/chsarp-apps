@@ -27,7 +27,18 @@ namespace SCHLStudio.App.Views.LiveTracking
             if (!IsLiveTrackingAllowed())
                 return;
 
-            _viewModel?.StartTracking();
+            // Fire and forget so we don't freeze the UI while navigating to this tab
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    _viewModel?.StartTracking();
+                }
+                catch
+                {
+                    // Ignore background tracking errors
+                }
+            });
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)

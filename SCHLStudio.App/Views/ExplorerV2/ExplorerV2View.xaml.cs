@@ -586,7 +586,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 try
                 {
-                    if (showClient && !_vm.HasSelectionMetaLock)
+                    if (showClient && _vm.IsStarted && !_vm.HasSelectionMetaLock)
                     {
                         _vm.LockSelectionMeta(_vm.ActiveJobClientCode, workType, tasks, etValue);
                     }

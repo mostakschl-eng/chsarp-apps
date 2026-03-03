@@ -605,6 +605,22 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
 
     public class PauseDetailModel : ViewModelBase
     {
+        private List<string> _pauseReasons = new List<string>();
+        public List<string> PauseReasons
+        {
+            get => _pauseReasons;
+            set
+            {
+                if (SetProperty(ref _pauseReasons, value))
+                    OnPropertyChanged(nameof(PauseReasonsArrayText));
+            }
+        }
+
+        public string PauseReasonsArrayText =>
+            PauseReasons != null && PauseReasons.Count > 0
+                ? $"[{string.Join(", ", PauseReasons)}]"
+                : "[]";
+
         private string _reason = string.Empty;
         public string Reason { get => _reason; set => SetProperty(ref _reason, value); }
         

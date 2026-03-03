@@ -23,6 +23,36 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
 
     public class ExplorerV2DragDropService
     {
+        public List<SelectedFileRow> BuildTemporaryDropRows(IEnumerable<string> paths)
+        {
+            var toAddRows = new List<SelectedFileRow>();
+            try
+            {
+                foreach (var p in paths)
+                {
+                    var path = (p ?? string.Empty).Trim().Trim('"');
+                    if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                    {
+                        continue;
+                    }
+
+                    toAddRows.Add(new SelectedFileRow
+                    {
+                        Serial = 0,
+                        FullPath = path,
+                        FileName = Path.GetFileName(path),
+                        DisplayFileName = ToShortFileName(Path.GetFileName(path))
+                    });
+                }
+            }
+            catch (Exception ex_safe_log)
+            {
+                NonCriticalLog.EnqueueError("ExplorerV2", "ExplorerV2DragDropService", ex_safe_log);
+            }
+
+            return toAddRows;
+        }
+
         public int GetMaxFilesPerUserOrDefault()
         {
             try

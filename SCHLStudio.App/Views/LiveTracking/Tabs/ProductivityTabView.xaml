@@ -20,7 +20,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,12,0" Margin="0,0,6,0">
         <StackPanel>
             <!-- Summary Cards (icon on right-center) -->
-            <Grid Margin="0,6,0,20">
+            <Grid Margin="0,6,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -83,6 +83,74 @@
                         <TextBlock Grid.Column="1" Text="&#xE823;" Style="{StaticResource LiveCardIconStyle}" Foreground="#FF9500" FontSize="24" Opacity="0.7" Margin="8,0,0,0"/>
                     </Grid>
                 </Border>
+            </Grid>
+
+            <!-- Search bar + Filter button -->
+            <Grid Margin="0,0,0,12" HorizontalAlignment="Left" MaxWidth="300">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="240"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" CornerRadius="8" Background="#F5F6F8" BorderBrush="#E0E0E5" BorderThickness="1" Padding="2,0" Margin="0,0,6,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                   Foreground="#AAAAAA" VerticalAlignment="Center" Margin="6,0,4,0"/>
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding ProductivityTab.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="Transparent" BorderThickness="0"
+                                 FontFamily="{StaticResource MainFontFamily}" FontSize="12"
+                                 Foreground="{DynamicResource TextMainBrush}"
+                                 Padding="4,6" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Filter button -->
+                <ToggleButton x:Name="ProdFilterToggle" Grid.Column="1" Background="Transparent" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center">
+                    <ToggleButton.Template>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="Bd" Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="6,5" Cursor="Hand">
+                                <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                    <Setter TargetName="Bd" Property="Background" Value="#E8F0FE"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#F0F4FF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </ToggleButton.Template>
+                </ToggleButton>
+
+                <!-- Filter Popup -->
+                <Popup IsOpen="{Binding IsChecked, ElementName=ProdFilterToggle}" StaysOpen="False" Placement="Bottom" PlacementTarget="{Binding ElementName=ProdFilterToggle}" HorizontalOffset="-180" VerticalOffset="4" AllowsTransparency="True">
+                    <Border Background="White" CornerRadius="10" BorderBrush="#E0E0E5" BorderThickness="1" Padding="14" MinWidth="240">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="12" Opacity="0.15" ShadowDepth="4" Direction="270"/>
+                        </Border.Effect>
+                        <StackPanel>
+                            <TextBlock Text="Date Filter" FontFamily="{StaticResource MainFontFamily}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMainBrush}" Margin="0,0,0,10"/>
+
+                            <TextBlock Text="FROM" FontFamily="{StaticResource MainFontFamily}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                            <DatePicker SelectedDate="{Binding ProductivityTab.FilterDateFrom, Mode=TwoWay}" Width="200" Height="30" FontFamily="{StaticResource MainFontFamily}" FontSize="12" Margin="0,0,0,10"/>
+
+                            <TextBlock Text="TO" FontFamily="{StaticResource MainFontFamily}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                            <DatePicker SelectedDate="{Binding ProductivityTab.FilterDateTo, Mode=TwoWay}" Width="200" Height="30" FontFamily="{StaticResource MainFontFamily}" FontSize="12" Margin="0,0,0,12"/>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Clear" Command="{Binding ProductivityTab.ClearFilterCommand}" Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" BorderThickness="0" FontSize="11" FontFamily="{StaticResource MainFontFamily}" Padding="8,4" Cursor="Hand" Margin="0,0,6,0"/>
+                                <Button Content="Apply" Command="{Binding ProductivityTab.ApplyFilterCommand}" Style="{StaticResource PrimaryButtonStyle}" MinWidth="60" Height="28" FontSize="11" FontFamily="{StaticResource MainFontFamily}" Padding="10,2" Cursor="Hand"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Popup>
             </Grid>
 
             <!-- Two-Panel Layout: Employees + QC Team -->

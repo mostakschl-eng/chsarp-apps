@@ -249,7 +249,18 @@ namespace SCHLStudio.App.Views.Windows
                     return;
                 }
 
-                LiveTrackingViewModel.Shared.StartTracking();
+                // Fire and forget to prevent blocking the UI thread during login handshake (~279ms)
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        LiveTrackingViewModel.Shared.StartTracking();
+                    }
+                    catch
+                    {
+                        // Ignore background tracking errors
+                    }
+                });
             }
             catch
             {

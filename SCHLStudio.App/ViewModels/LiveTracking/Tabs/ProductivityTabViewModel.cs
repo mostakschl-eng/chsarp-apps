@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Windows.Input;
 using SCHLStudio.App.ViewModels.Base;
 using SCHLStudio.App.ViewModels.LiveTracking.Models;
 
@@ -34,46 +35,129 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
         private readonly ObservableCollection<CategoryEmployeeGroupModel> _qcCategoryGroups = new();
         public ReadOnlyObservableCollection<CategoryEmployeeGroupModel> QcCategoryGroups { get; }
 
+        // ─── Search ───
+        private string _searchText = string.Empty;
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (SetProperty(ref _searchText, value))
+                    RebuildAll();
+            }
+        }
+
+        // ─── Date filter ───
+        private DateTime? _filterDateFrom;
+        public DateTime? FilterDateFrom
+        {
+            get => _filterDateFrom;
+            set => SetProperty(ref _filterDateFrom, value);
+        }
+
+        private DateTime? _filterDateTo;
+        public DateTime? FilterDateTo
+        {
+            get => _filterDateTo;
+            set => SetProperty(ref _filterDateTo, value);
+        }
+
+        public ICommand ApplyFilterCommand { get; }
+        public ICommand ClearFilterCommand { get; }
+
+        // ─── Last data for re-filtering ───
+        private List<LiveTrackingSessionModel> _lastSessions = new();
+
         public ProductivityTabViewModel()
         {
             EmployeeCategoryGroups = new ReadOnlyObservableCollection<CategoryEmployeeGroupModel>(_employeeCategoryGroups);
             QcCategoryGroups = new ReadOnlyObservableCollection<CategoryEmployeeGroupModel>(_qcCategoryGroups);
+            ApplyFilterCommand = new RelayCommand(_ => RebuildAll());
+            ClearFilterCommand = new RelayCommand(_ => ClearFilter());
         }
 
         public void RefreshData(List<LiveTrackingSessionModel> allSessions)
         {
             try
             {
-                if (allSessions == null) return;
-
-                // Summary Cards
-                TotalFiles = allSessions.SelectMany(s => s.Files).Count();
-                TotalUsers = allSessions.Select(s => s.EmployeeName).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Count();
-                AvgFilesPerUser = TotalUsers > 0 ? Math.Round((double)TotalFiles / TotalUsers, 1).ToString("0.#") : "0";
-
-                var completed = allSessions.SelectMany(s => s.Files)
-                    .Where(f => string.Equals(f.FileStatus, "done", StringComparison.OrdinalIgnoreCase))
-                    .Select(f => (f.FileName ?? string.Empty).ToLowerInvariant())
-                    .Distinct()
-                    .Count();
-                CompletedFiles = completed;
-                var totalTime = allSessions.Sum(s => s.TotalTimes);
-                AvgTimePerFile = completed > 0 ? LiveTrackingFileModel.FormatMinutes(totalTime / completed) : "0m";
-
-                // Build category→employee groups for PRODUCTION (non-QC)
-                var prodSessions = allSessions.Where(s => !IsQcWorkType(s.WorkType)).ToList();
-                var prodCategoryGroups = BuildCategoryGroups(prodSessions);
-                SyncCategoryGroups(_employeeCategoryGroups, prodCategoryGroups);
-
-                // Build category→employee groups for QC
-                var qcSessions = allSessions.Where(s => IsQcWorkType(s.WorkType)).ToList();
-                var qcCategoryGroups = BuildCategoryGroups(qcSessions);
-                SyncCategoryGroups(_qcCategoryGroups, qcCategoryGroups);
+                _lastSessions = allSessions ?? new List<LiveTrackingSessionModel>();
+                RebuildAll();
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[ProductivityTabViewModel] RefreshData error: {ex.Message}");
             }
+        }
+
+        private void RebuildAll()
+        {
+            try
+            {
+                var sessions = ApplyDateFilter(_lastSessions);
+                var filtered = ApplySearchFilter(sessions);
+
+                // Summary Cards (based on filtered data)
+                TotalFiles = filtered.SelectMany(s => s.Files).Count();
+                TotalUsers = filtered.Select(s => s.EmployeeName).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Count();
+                AvgFilesPerUser = TotalUsers > 0 ? Math.Round((double)TotalFiles / TotalUsers, 1).ToString("0.#") : "0";
+
+                var completed = filtered.SelectMany(s => s.Files)
+                    .Where(f => string.Equals(f.FileStatus, "done", StringComparison.OrdinalIgnoreCase))
+                    .Select(f => (f.FileName ?? string.Empty).ToLowerInvariant())
+                    .Distinct()
+                    .Count();
+                CompletedFiles = completed;
+                var totalTime = filtered.Sum(s => s.TotalTimes);
+                AvgTimePerFile = completed > 0 ? LiveTrackingFileModel.FormatMinutes(totalTime / completed) : "0m";
+
+                // Build category→employee groups for PRODUCTION (non-QC)
+                var prodSessions = filtered.Where(s => !IsQcWorkType(s.WorkType)).ToList();
+                var prodCategoryGroups = BuildCategoryGroups(prodSessions);
+                SyncCategoryGroups(_employeeCategoryGroups, prodCategoryGroups);
+
+                // Build category→employee groups for QC
+                var qcSessions = filtered.Where(s => IsQcWorkType(s.WorkType)).ToList();
+                var qcCategoryGroups = BuildCategoryGroups(qcSessions);
+                SyncCategoryGroups(_qcCategoryGroups, qcCategoryGroups);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ProductivityTabViewModel] RebuildAll error: {ex.Message}");
+            }
+        }
+
+        private List<LiveTrackingSessionModel> ApplyDateFilter(List<LiveTrackingSessionModel> sessions)
+        {
+            if (!_filterDateFrom.HasValue && !_filterDateTo.HasValue)
+                return sessions;
+
+            var from = (_filterDateFrom ?? _filterDateTo)?.Date ?? DateTime.Today;
+            var to = ((_filterDateTo ?? _filterDateFrom)?.Date ?? DateTime.Today).AddDays(1);
+
+            return sessions.Where(s =>
+            {
+                var dt = s.UpdatedAt.ToLocalTime().Date;
+                return dt >= from && dt < to;
+            }).ToList();
+        }
+
+        private List<LiveTrackingSessionModel> ApplySearchFilter(List<LiveTrackingSessionModel> sessions)
+        {
+            var query = (_searchText ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(query))
+                return sessions;
+
+            return sessions.Where(s =>
+                (s.EmployeeName ?? string.Empty).IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0
+            ).ToList();
+        }
+
+        private void ClearFilter()
+        {
+            FilterDateFrom = null;
+            FilterDateTo = null;
+            SearchText = string.Empty;
+            RebuildAll();
         }
 
         private static List<CategoryEmployeeGroupModel> BuildCategoryGroups(List<LiveTrackingSessionModel> sessions)

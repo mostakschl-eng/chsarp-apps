@@ -197,6 +197,22 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 PauseWorkTimer();
 
+                try
+                {
+                    // Flush the last active work delta immediately on pause.
+                    // Heartbeat only sends once per minute, so without this the backend can lag.
+                    var elapsed = GetWorkTimerElapsedSeconds();
+                    QueueWorkDeltaAcrossActiveFiles(
+                        totalElapsedSeconds: elapsed,
+                        filesToExclude: null,
+                        activeSnapshotFilePaths: null,
+                        forceEvenIfPaused: true);
+                }
+                catch (Exception ex_safe_log)
+                {
+                    LogSuppressedError("ExplorerV2View.Break.FlushDeltaOnPause", ex_safe_log);
+                }
+
                 TrackerBeginPause();
                 TrackerQueuePaused(GetTrackerTargetFullPaths());
             }

@@ -54,15 +54,6 @@
             <Setter Property="Padding" Value="0" />
         </Style>
 
-        <Style x:Key="LiveDatePickerTextBoxStyle" TargetType="DatePickerTextBox" BasedOn="{StaticResource {x:Type DatePickerTextBox}}">
-            <Setter Property="Padding" Value="4,1,0,0" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
-            <Setter Property="FontFamily" Value="{StaticResource MainFontFamily}" />
-            <Setter Property="FontSize" Value="12" />
-        </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -92,60 +83,6 @@
 
             <!-- 3 filter buttons: Date, Client, User — all same rounded style -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <!-- Date filter (single + range) -->
-                <Border Background="{DynamicResource BgCardBrush}"
-                        BorderBrush="{DynamicResource BorderLightBrush}"
-                        BorderThickness="1" CornerRadius="10"
-                        Padding="6,0" Height="34" Margin="0,0,10,0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <DatePicker SelectedDate="{Binding DateFrom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="120"
-                                    Height="28"
-                                    VerticalAlignment="Center"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    FontFamily="{StaticResource MainFontFamily}"
-                                    FontSize="12"
-                                    Foreground="{DynamicResource TextMainBrush}">
-                            <DatePicker.Resources>
-                                <Style TargetType="DatePickerTextBox" BasedOn="{StaticResource LiveDatePickerTextBoxStyle}" />
-                            </DatePicker.Resources>
-                        </DatePicker>
-
-                        <TextBlock Text="to"
-                                   Margin="2,0"
-                                   VerticalAlignment="Center"
-                                   FontFamily="{StaticResource MainFontFamily}"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
-
-                        <DatePicker SelectedDate="{Binding DateTo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="120"
-                                Height="28"
-                                    VerticalAlignment="Center"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    FontFamily="{StaticResource MainFontFamily}"
-                                    FontSize="12"
-                                    Foreground="{DynamicResource TextMainBrush}">
-                            <DatePicker.Resources>
-                                <Style TargetType="DatePickerTextBox" BasedOn="{StaticResource LiveDatePickerTextBoxStyle}" />
-                            </DatePicker.Resources>
-                        </DatePicker>
-
-                        <Button Content="Apply"
-                                Command="{Binding ApplyDateRangeCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                                Margin="4,0,0,0"
-                                MinWidth="52"
-                                Height="24"
-                                FontSize="11"
-                                FontFamily="{StaticResource MainFontFamily}"
-                                Padding="8,2"
-                                Cursor="Hand"/>
-                    </StackPanel>
-                </Border>
 
                 <!-- Client -->
                 <Border Background="{DynamicResource BgCardBrush}"
