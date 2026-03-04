@@ -180,7 +180,7 @@
                            Foreground="{DynamicResource TextMainBrush}"
                            VerticalAlignment="Center" />
 
-                <Button Grid.Column="1"
+                <Button x:Name="CloseBtn" Grid.Column="1"
                         Content="✕"
                         Width="34"
                         Height="34"
@@ -294,6 +294,14 @@
                                HorizontalAlignment="Center"
                                TextWrapping="Wrap"
                                TextAlignment="Center" />
+                    <TextBlock x:Name="PauseTimerText"
+                               Text="00:00"
+                               Margin="0,12,0,0"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource WarningBrush}"
+                               HorizontalAlignment="Center"
+                               Visibility="Collapsed" />
                 </StackPanel>
 
                 <Button Grid.Row="1"

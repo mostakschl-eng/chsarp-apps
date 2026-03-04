@@ -14,7 +14,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
 {
     /// <summary>
     /// Inline Job List panel logic — mirrors the behaviour of the former
-    /// <see cref="JobListWindow"/> but rendered inside the ExplorerV2 content grid.
+    /// Inline Job List panel rendered inside the ExplorerV2 content grid.
     /// </summary>
     public partial class ExplorerV2View
     {
@@ -249,16 +249,36 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     query = query.Where(r =>
-                        (!string.IsNullOrWhiteSpace(r?.ClientCode) && r.ClientCode.Contains(search, StringComparison.OrdinalIgnoreCase))
-                        || (!string.IsNullOrWhiteSpace(r?.FolderPath)
-                            && ((isPathLike && JlpNormalizePath(r.FolderPath).Length > 0
-                                    && (normalizedSearch.StartsWith(JlpNormalizePath(r.FolderPath), StringComparison.OrdinalIgnoreCase)
-                                        || JlpNormalizePath(r.FolderPath).Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)))
-                                || (!isPathLike && r.FolderPath.Contains(search, StringComparison.OrdinalIgnoreCase))))
-                    );
+                    {
+                        if (!string.IsNullOrWhiteSpace(r?.ClientCode) && r.ClientCode.Contains(search, StringComparison.OrdinalIgnoreCase))
+                            return true;
+
+                        if (string.IsNullOrWhiteSpace(r?.FolderPath))
+                            return false;
+
+                        if (isPathLike)
+                        {
+                            var normalizedFolder = JlpNormalizePath(r.FolderPath);
+                            if (normalizedFolder.Length > 0
+                                && (normalizedSearch.StartsWith(normalizedFolder, StringComparison.OrdinalIgnoreCase)
+                                    || normalizedFolder.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)))
+                                return true;
+                        }
+                        else if (r.FolderPath.Contains(search, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+
+                        return false;
+                    });
                 }
 
                 var filtered = query.ToList();
+
+                // Batch update: detach ItemsSource, swap contents, re-attach.
+                // This fires a single Reset instead of N individual Add notifications.
+                if (JlpJobsList is not null)
+                    JlpJobsList.ItemsSource = null;
 
                 _jlpRows.Clear();
                 for (var i = 0; i < filtered.Count; i++)
@@ -266,6 +286,9 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     filtered[i].RowNumber = i + 1;
                     _jlpRows.Add(filtered[i]);
                 }
+
+                if (JlpJobsList is not null)
+                    JlpJobsList.ItemsSource = _jlpRows;
 
                 JlpRefreshCounts();
                 JlpAutoSelect(filtered, search);
@@ -275,6 +298,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 LogSuppressedError("ExplorerV2View.JobListPanel", ex);
             }
         }
+
 
         private void JlpAutoSelect(List<JobListRow> filtered, string search)
         {
@@ -360,7 +384,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
-                _ = LoadJobListFromApiAsync(null);
+                _ = LoadJobListFromApiAsync();
             }
             catch (Exception ex)
             {
@@ -373,6 +397,13 @@ namespace SCHLStudio.App.Views.ExplorerV2
             try
             {
                 if (_jlpSuppressFilter) return;
+
+                // Auto-open the panel when the user types a search query while it is closed
+                if (!_isJobListPanelOpen && !string.IsNullOrWhiteSpace(JlpSearchTextBox?.Text))
+                {
+                    OpenJobListPanel();
+                }
+
                 JlpApplyFilters();
             }
             catch (Exception ex)
@@ -506,7 +537,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
-        // ── callbacks (same logic as JobListWindow event delegates) ────
+        // ── callbacks (same logic as the former dialog event delegates) ────
         private void JlpOnAddRequested(JobListRow row)
         {
             try

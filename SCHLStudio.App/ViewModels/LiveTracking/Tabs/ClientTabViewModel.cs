@@ -69,7 +69,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                     .Distinct()
                     .Count();
 
-                TotalTimeSpent = LiveTrackingFileModel.FormatMinutes(allSessions.Sum(s => s.TotalTimes));
+                TotalTimeSpent = LiveTrackingFileModel.FormatMinutes(allSessions.Sum(s => s.ComputedTotalTimes));
 
                 var grouped = allSessions
                     .Where(s => !string.IsNullOrWhiteSpace(s.ClientCode))
@@ -116,7 +116,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                                 })
                                 .Select(jobGroup => jobGroup.Max(x => x.EstimateTime))
                                 .Sum(),
-                            TotalTimeSpent = g.Sum(s => s.TotalTimes),
+                            TotalTimeSpent = g.Sum(s => s.ComputedTotalTimes),
                             StartTime = g.Min(s => s.CreatedAt),
                             EndTime = g.Max(s => s.UpdatedAt),
                         };

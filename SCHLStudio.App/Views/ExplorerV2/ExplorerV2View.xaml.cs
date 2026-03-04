@@ -67,6 +67,17 @@ namespace SCHLStudio.App.Views.ExplorerV2
         private readonly List<JobListRow> _jobListRows = new();
         private HashSet<string> _activeJobTasks = new(StringComparer.OrdinalIgnoreCase);
 
+        // ── Cached brushes (resolved once on Loaded, avoids TryFindResource per tick) ──
+        private System.Windows.Media.Brush? _cachedDividerBrush;
+        private System.Windows.Media.Brush? _cachedPrimaryBrush;
+        private System.Windows.Media.Brush? _cachedDangerBrush;
+        private System.Windows.Media.Brush? _cachedWarningBrush;
+        private System.Windows.Media.Brush? _cachedTextMainBrush;
+        private System.Windows.Media.Brush? _cachedTextWhiteBrush;
+
+        // ── Cached active job ET (updated on job selection, avoids LINQ scan every tick) ──
+        private int _cachedActiveJobEtMinutes;
+
         private static void RunNonCritical(Action action, string operation = "ExplorerV2.NonCriticalAction")
         {
             try
@@ -163,6 +174,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 RunNonCritical(ApplyRoleBasedUiRestrictions, "ExplorerV2.Loaded.ApplyRoleBasedUiRestrictions");
             }
 
+            RunNonCritical(CacheBrushes, "ExplorerV2.Loaded.CacheBrushes");
+
             try
             {
                 if (_vm.IsStarted)
@@ -178,7 +191,17 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
             // Auto-open the Job List panel on app load
             RunNonCritical(OpenJobListPanel, "ExplorerV2.Loaded.OpenJobListPanel");
-            RunNonCriticalAsync(() => LoadJobListFromApiAsync(null), "ExplorerV2.Loaded.LoadJobList");
+            RunNonCriticalAsync(() => LoadJobListFromApiAsync(), "ExplorerV2.Loaded.LoadJobList");
+        }
+
+        private void CacheBrushes()
+        {
+            _cachedDividerBrush = TryFindResource("DividerBrush") as System.Windows.Media.Brush;
+            _cachedPrimaryBrush = TryFindResource("PrimaryBrush") as System.Windows.Media.Brush;
+            _cachedDangerBrush = TryFindResource("DangerBrush") as System.Windows.Media.Brush;
+            _cachedWarningBrush = TryFindResource("WarningBrush") as System.Windows.Media.Brush;
+            _cachedTextMainBrush = TryFindResource("TextMainBrush") as System.Windows.Media.Brush;
+            _cachedTextWhiteBrush = TryFindResource("TextWhiteBrush") as System.Windows.Media.Brush;
         }
 
         private void StartTrackerSyncWhenUserAvailable()
@@ -357,9 +380,14 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
             if (FilesQc2DoneButton is not null)
             {
-                FilesQc2DoneButton.IsEnabled = !isEmployee;
-                FilesQc2DoneButton.Visibility = isEmployee ? Visibility.Collapsed : Visibility.Visible;
-                if (isEmployee)
+                var role = GetAppCurrentRole();
+                var hideQc2Done = isEmployee ||
+                                  string.Equals(role, "qc", StringComparison.OrdinalIgnoreCase) ||
+                                  string.Equals(role, "qcmanager", StringComparison.OrdinalIgnoreCase);
+
+                FilesQc2DoneButton.IsEnabled = !hideQc2Done;
+                FilesQc2DoneButton.Visibility = hideQc2Done ? Visibility.Collapsed : Visibility.Visible;
+                if (hideQc2Done)
                 {
                     FilesQc2DoneButton.IsChecked = false;
                 }

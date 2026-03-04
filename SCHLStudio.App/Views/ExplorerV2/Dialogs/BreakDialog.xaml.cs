@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace SCHLStudio.App.Views.ExplorerV2
 {
@@ -12,6 +13,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
         public string? Note { get; private set; }
 
         private readonly Action<string, string>? _onBreakStarted;
+        private DispatcherTimer? _pauseTimer;
+        private DateTime _pauseStartedAt;
 
         public BreakDialog(IReadOnlyList<string> reasons, string? selectedReason, string? note, Action<string, string>? onBreakStarted = null)
         {
@@ -69,10 +72,17 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
+                var selected = (ReasonsList.SelectedItem?.ToString() ?? string.Empty).Trim();
                 var custom = (CustomReasonTextBox.Text ?? string.Empty).Trim();
-                SelectedReason = !string.IsNullOrWhiteSpace(custom)
-                    ? custom
-                    : (ReasonsList.SelectedItem?.ToString() ?? string.Empty).Trim();
+
+                // Combine: if both selected and custom, join them
+                if (!string.IsNullOrWhiteSpace(selected) && !string.IsNullOrWhiteSpace(custom))
+                    SelectedReason = $"{selected} - {custom}";
+                else if (!string.IsNullOrWhiteSpace(custom))
+                    SelectedReason = custom;
+                else
+                    SelectedReason = selected;
+
                 Note = custom;
 
                 if (string.IsNullOrWhiteSpace(SelectedReason))
@@ -87,6 +97,27 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     SelectionView.Visibility = Visibility.Collapsed;
                     PausedView.Visibility = Visibility.Visible;
                     PausedReasonText.Text = SelectedReason;
+
+                    // Hide close button so user cannot accidentally dismiss
+                    CloseBtn.Visibility = Visibility.Collapsed;
+
+                    // Start pause timer
+                    _pauseStartedAt = DateTime.Now;
+                    PauseTimerText.Text = "00:00";
+                    PauseTimerText.Visibility = Visibility.Visible;
+                    _pauseTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                    _pauseTimer.Tick += (_, __) =>
+                    {
+                        try
+                        {
+                            var elapsed = DateTime.Now - _pauseStartedAt;
+                            PauseTimerText.Text = elapsed.TotalHours >= 1
+                                ? elapsed.ToString(@"hh\:mm\:ss")
+                                : elapsed.ToString(@"mm\:ss");
+                        }
+                        catch { }
+                    };
+                    _pauseTimer.Start();
                 }
                 catch { }
 
@@ -132,6 +163,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
+                _pauseTimer?.Stop();
+                _pauseTimer = null;
                 DialogResult = true;
                 Close();
             }

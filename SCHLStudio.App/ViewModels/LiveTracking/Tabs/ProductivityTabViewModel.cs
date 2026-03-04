@@ -107,7 +107,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                     .Distinct()
                     .Count();
                 CompletedFiles = completed;
-                var totalTime = filtered.Sum(s => s.TotalTimes);
+                var totalTime = filtered.Sum(s => s.ComputedTotalTimes);
                 AvgTimePerFile = completed > 0 ? LiveTrackingFileModel.FormatMinutes(totalTime / completed) : "0m";
 
                 // Build category→employee groups for PRODUCTION (non-QC)
@@ -136,7 +136,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
 
             return sessions.Where(s =>
             {
-                var dt = s.UpdatedAt.ToLocalTime().Date;
+                var dt = LiveTrackingFileModel.ToDhakaTime(s.UpdatedAt).Date;
                 return dt >= from && dt < to;
             }).ToList();
         }
@@ -185,7 +185,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                             WorkType = string.Join(", ", empGroup.Select(x => x.Session.WorkType).Where(w => !string.IsNullOrWhiteSpace(w)).Distinct()),
                             TotalFiles = empGroup.Sum(x => x.Session.Files.Count),
                             CompletedFiles = empGroup.Sum(x => x.Session.Files.Count(f => string.Equals(f.FileStatus, "done", StringComparison.OrdinalIgnoreCase))),
-                            TotalTime = empGroup.Sum(x => x.Session.TotalTimes)
+                            TotalTime = empGroup.Sum(x => x.Session.ComputedTotalTimes)
                         })
                         .OrderByDescending(e => e.TotalFiles)
                         .ThenBy(e => e.TotalFiles > 0 ? e.TotalTime / e.TotalFiles : double.MaxValue)

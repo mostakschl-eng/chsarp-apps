@@ -449,44 +449,6 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
             }
         }
 
-        public bool IsSelectionMetaMatch(string? clientCode, string? workType, IReadOnlyList<string>? tasks)
-        {
-            try
-            {
-                if (!HasSelectionMetaLock)
-                {
-                    return true;
-                }
-
-                var cc = (clientCode ?? string.Empty).Trim();
-                var wt = (workType ?? string.Empty).Trim();
-                var t = (tasks ?? Array.Empty<string>())
-                    .Select(x => (x ?? string.Empty).Trim())
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                var lockCc = (SelectionLockedClientCode ?? string.Empty).Trim();
-                var lockWt = (SelectionLockedWorkType ?? string.Empty).Trim();
-
-                if (!string.Equals(cc, lockCc, StringComparison.OrdinalIgnoreCase)) return false;
-                if (!string.Equals(wt, lockWt, StringComparison.OrdinalIgnoreCase)) return false;
-
-                if (t.Count != _selectionLockedTasks.Count) return false;
-                for (var i = 0; i < t.Count; i++)
-                {
-                    if (!string.Equals(t[i], _selectionLockedTasks[i], StringComparison.OrdinalIgnoreCase)) return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogNonCritical(nameof(IsSelectionMetaMatch), ex);
-                return true;
-            }
-        }
 
         public void RefreshMetaText(bool showClient, string? clientCode, string? workType, IReadOnlyList<string>? tasks, int? et)
         {

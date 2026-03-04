@@ -27,7 +27,6 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
 
         private readonly ILiveTrackingDataService _dataService;
         private readonly DispatcherTimer _uiRefreshTimer;
-        private readonly DispatcherTimer _snapshotReloadTimer;
         private readonly SemaphoreSlim _loadLock = new SemaphoreSlim(1, 1);
         private bool _isTrackingStarted;
 
@@ -276,25 +275,6 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                 }
             };
 
-            // Polling timer: full snapshot reload every 60 seconds as a safety net
-            // alongside real-time Socket.IO updates.
-            _snapshotReloadTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(60),
-            };
-            _snapshotReloadTimer.Tick += (s, e) =>
-            {
-                try
-                {
-                    if (ShouldReloadLiveSnapshot())
-                    {
-                        _ = LoadDataAsync();
-                    }
-                }
-                catch
-                {
-                }
-            };
 
             ToggleSingleDatePopupCommand = new RelayCommand(_ =>
             {
@@ -430,10 +410,6 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                 _uiRefreshTimer.Start();
             }
 
-            if (!_snapshotReloadTimer.IsEnabled)
-            {
-                _snapshotReloadTimer.Start();
-            }
 
             // Always do an immediate data load when this tab becomes active
             _ = LoadDataAsync();
@@ -443,51 +419,66 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
         {
             _isTrackingStarted = false;
             _uiRefreshTimer.Stop();
-            _snapshotReloadTimer.Stop();
             _dataService.StopRealTimeUpdates();
         }
 
         public void SetForegroundMode()
         {
             if (!_uiRefreshTimer.IsEnabled)
-            {
                 _uiRefreshTimer.Start();
-            }
-
-            if (!_snapshotReloadTimer.IsEnabled)
-            {
-                _snapshotReloadTimer.Start();
-            }
 
             _ = LoadDataAsync();
         }
 
-        public void SetBackgroundMode()
-        {
-            // No polling in background mode either.
-        }
 
-        private bool ShouldReloadLiveSnapshot()
-        {
-            var today = DateTime.Today;
+        // ── Shared JSON helpers ────────────────────────────────────────
 
-            // Range mode: reload if today falls within the selected range.
-            if (DateFrom.HasValue && DateTo.HasValue)
+        private static LiveTrackingFileModel ParseFileFromJson(JsonElement el)
+        {
+            var fname = (el.TryGetProperty("fileName", out var fnEl) || el.TryGetProperty("file_name", out fnEl))
+                ? fnEl.GetString() ?? "" : "";
+            string fStatus = string.Empty;
+            if ((el.TryGetProperty("fileStatus", out var fStatusEl) || el.TryGetProperty("file_status", out fStatusEl))
+                && fStatusEl.ValueKind == JsonValueKind.String)
             {
-                var from = DateFrom.Value.Date;
-                var to = DateTo.Value.Date;
-                if (from > to)
-                {
-                    var temp = from;
-                    from = to;
-                    to = temp;
-                }
-
-                return today >= from && today <= to;
+                fStatus = fStatusEl.GetString() ?? string.Empty;
             }
 
-            // Single-date mode: only reload if viewing today.
-            return SelectedDate.Date == today;
+            var fTime = (el.TryGetProperty("timeSpent", out var ftEl) || el.TryGetProperty("time_spent", out ftEl))
+                ? ftEl.GetDouble() / 60.0 : 0;
+
+            DateTime? startTime = null;
+            if ((el.TryGetProperty("startedAt", out var saEl) || el.TryGetProperty("started_at", out saEl))
+                && saEl.ValueKind == JsonValueKind.String)
+            {
+                var saStr = saEl.GetString();
+                if (!string.IsNullOrWhiteSpace(saStr)) startTime = DateTime.Parse(saStr);
+            }
+
+            DateTime? endTime = null;
+            if ((el.TryGetProperty("completedAt", out var caEl) || el.TryGetProperty("completed_at", out caEl))
+                && caEl.ValueKind == JsonValueKind.String)
+            {
+                var caStr = caEl.GetString();
+                if (!string.IsNullOrWhiteSpace(caStr)) endTime = DateTime.Parse(caStr);
+            }
+
+            return new LiveTrackingFileModel
+            {
+                FileName = fname,
+                FileStatus = fStatus,
+                TimeSpent = fTime,
+                StartTime = startTime,
+                EndTime = endTime,
+            };
+        }
+
+        private static List<LiveTrackingFileModel> SortFilesByStatus(List<LiveTrackingFileModel> files)
+        {
+            return files
+                .OrderBy(f => f.IsWorkingFile ? 0 : 1)
+                .ThenByDescending(f => f.StartTime ?? f.EndTime ?? DateTime.MinValue)
+                .ToList();
         }
 
         private static DateTime ToUtcSafe(DateTime dateTime)
@@ -536,9 +527,6 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                         return string.Equals((existing ?? string.Empty).Trim(), inc, StringComparison.OrdinalIgnoreCase);
                     }
 
-                    // Some tracker updates (especially on start/resume) can arrive with partial metadata.
-                    // If we require an exact match on all keys, we can fail to find the session, create
-                    // a new one with blank fields, and then it gets filtered out of Client/Production/QC tabs.
                     var session = _allData.FirstOrDefault(s =>
                         string.Equals((s.EmployeeName ?? string.Empty).Trim(), emp, StringComparison.OrdinalIgnoreCase)
                         && MatchesOrWildcard(s.Shift, shift)
@@ -552,16 +540,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                             ? session.Files.Where(f => f != null).ToList()
                             : new List<LiveTrackingFileModel>();
 
-                        static bool IsWorkingStatusTop(string status)
-                        {
-                            return string.Equals(status, "working", StringComparison.OrdinalIgnoreCase)
-                                || string.Equals(status, "in_progress", StringComparison.OrdinalIgnoreCase)
-                                || string.Equals(status, "in progress", StringComparison.OrdinalIgnoreCase)
-                                || string.Equals(status, "in-progress", StringComparison.OrdinalIgnoreCase)
-                                || string.Equals(status, "inprogress", StringComparison.OrdinalIgnoreCase);
-                        }
-
-                        var deltaSaysWorkingTop = IsWorkingStatusTop((updatedStatus ?? string.Empty).Trim());
+                        var deltaSaysWorkingTop = LiveTrackingFileModel.IsWorkingStatus((updatedStatus ?? string.Empty).Trim());
 
                         // Do not overwrite known metadata with empty values from deltas.
                         if (!string.IsNullOrWhiteSpace(shift)) session.Shift = shift;
@@ -580,12 +559,22 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                         if (data.TryGetProperty("pause_reasons", out var prArr) && prArr.ValueKind == JsonValueKind.Array)
                         {
                             var reasons = new List<string>();
+                            var details = new List<PauseReasonItemModel>();
                             foreach (var pr in prArr.EnumerateArray())
                             {
                                 var reason = pr.TryGetProperty("reason", out var rEl) ? rEl.GetString() ?? "" : "";
-                                if (!string.IsNullOrWhiteSpace(reason)) reasons.Add(reason.Trim());
+                                if (!string.IsNullOrWhiteSpace(reason))
+                                {
+                                    reasons.Add(reason.Trim());
+                                    var item = new PauseReasonItemModel { Reason = reason.Trim() };
+                                    if (pr.TryGetProperty("duration", out var dEl)) item.Duration = dEl.GetDouble() / 60.0;
+                                    if (pr.TryGetProperty("started_at", out var sEl) && sEl.TryGetDateTime(out var sdt)) item.StartTime = sdt;
+                                    if (pr.TryGetProperty("completed_at", out var cEl) && cEl.TryGetDateTime(out var cdt)) item.EndTime = cdt;
+                                    details.Add(item);
+                                }
                             }
                             if (reasons.Any()) session.PauseReasons = reasons;
+                            if (details.Any()) session.PauseReasonDetails = details;
                         }
 
                         var hasFilesArray = data.TryGetProperty("files", out var filesArr) && filesArr.ValueKind == JsonValueKind.Array;
@@ -600,85 +589,36 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
 
                         if (hasNonEmptyFilesArray)
                         {
-                            // Backend now sends full file list with accumulated values
-                            // Rebuild files sorted: working first, then by startedAt desc
                             var newFiles = new List<LiveTrackingFileModel>();
                             var topStatus = (updatedStatus ?? string.Empty).Trim();
                             foreach (var updatedFile in filesArr.EnumerateArray())
                             {
-                                var fname = (updatedFile.TryGetProperty("fileName", out var fnEl) || updatedFile.TryGetProperty("file_name", out fnEl)) ? fnEl.GetString() ?? "" : "";
-                                string fStatus = string.Empty;
-                                if ((updatedFile.TryGetProperty("fileStatus", out var fStatusEl) || updatedFile.TryGetProperty("file_status", out fStatusEl))
-                                    && fStatusEl.ValueKind == JsonValueKind.String)
+                                var f = ParseFileFromJson(updatedFile);
+                                // If file status missing, infer from previous state or top-level status
+                                if (string.IsNullOrWhiteSpace(f.FileStatus) && !string.IsNullOrWhiteSpace(f.FileName))
                                 {
-                                    fStatus = fStatusEl.GetString() ?? string.Empty;
-                                }
-                                if (string.IsNullOrWhiteSpace(fStatus) && !string.IsNullOrWhiteSpace(fname))
-                                {
-                                    var prev = previousFiles.FirstOrDefault(pf => string.Equals(pf.FileName, fname, StringComparison.OrdinalIgnoreCase));
+                                    var prev = previousFiles.FirstOrDefault(pf => string.Equals(pf.FileName, f.FileName, StringComparison.OrdinalIgnoreCase));
                                     if (prev != null)
                                     {
                                         var prevStatus = (prev.FileStatus ?? string.Empty).Trim();
                                         var topIsPaused = string.Equals(topStatus, "pause", StringComparison.OrdinalIgnoreCase)
                                             || string.Equals(topStatus, "paused", StringComparison.OrdinalIgnoreCase);
 
-                                        if (IsWorkingStatusLocal(prevStatus)
-                                            && (topIsPaused
-                                                || string.Equals(topStatus, "done", StringComparison.OrdinalIgnoreCase)))
-                                        {
-                                            fStatus = topStatus;
-                                        }
+                                        if (LiveTrackingFileModel.IsWorkingStatus(prevStatus)
+                                            && (topIsPaused || string.Equals(topStatus, "done", StringComparison.OrdinalIgnoreCase)))
+                                            f.FileStatus = topStatus;
                                         else
-                                        {
-                                            fStatus = prevStatus;
-                                        }
+                                            f.FileStatus = prevStatus;
                                     }
                                 }
-                                // Backend sends accumulated seconds; convert to minutes
-                                var fTime = (updatedFile.TryGetProperty("timeSpent", out var ftEl) || updatedFile.TryGetProperty("time_spent", out ftEl)) ? ftEl.GetDouble() / 60.0 : 0;
-                                
-                                DateTime? startTime = null;
-                                if ((updatedFile.TryGetProperty("startedAt", out var saEl) || updatedFile.TryGetProperty("started_at", out saEl)) && saEl.ValueKind == JsonValueKind.String)
-                                {
-                                    var saStr = saEl.GetString();
-                                    if (!string.IsNullOrWhiteSpace(saStr)) startTime = DateTime.Parse(saStr);
-                                }
-                                
-                                DateTime? endTime = null;
-                                if ((updatedFile.TryGetProperty("completedAt", out var caEl) || updatedFile.TryGetProperty("completed_at", out caEl)) && caEl.ValueKind == JsonValueKind.String)
-                                {
-                                    var caStr = caEl.GetString();
-                                    if (!string.IsNullOrWhiteSpace(caStr)) endTime = DateTime.Parse(caStr);
-                                }
-
-                                newFiles.Add(new LiveTrackingFileModel
-                                {
-                                    FileName = fname,
-                                    FileStatus = fStatus,
-                                    TimeSpent = fTime,
-                                    StartTime = startTime,
-                                    EndTime = endTime
-                                });
+                                newFiles.Add(f);
                             }
 
-                            // Sort: working files first, then by start time desc
-                            var sorted = newFiles
-                                .OrderBy(f => string.Equals(f.FileStatus, "working", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
-                                .ThenByDescending(f => f.StartTime ?? f.EndTime ?? DateTime.MinValue)
-                                .ToList();
+                            var sorted = SortFilesByStatus(newFiles);
 
-                            static bool IsWorkingStatusLocal(string status)
-                            {
-                                return string.Equals(status, "working", StringComparison.OrdinalIgnoreCase)
-                                    || string.Equals(status, "in_progress", StringComparison.OrdinalIgnoreCase)
-                                    || string.Equals(status, "in progress", StringComparison.OrdinalIgnoreCase)
-                                    || string.Equals(status, "in-progress", StringComparison.OrdinalIgnoreCase)
-                                    || string.Equals(status, "inprogress", StringComparison.OrdinalIgnoreCase);
-                            }
-
-                            var wasWorking = previousFiles.Any(f => IsWorkingStatusLocal((f?.FileStatus ?? string.Empty).Trim()));
-                            var nowWorking = sorted.Any(f => IsWorkingStatusLocal((f?.FileStatus ?? string.Empty).Trim()));
-                            var deltaSaysWorking = IsWorkingStatusLocal((updatedStatus ?? string.Empty).Trim());
+                            var wasWorking = previousFiles.Any(f => f.IsWorkingFile);
+                            var nowWorking = sorted.Any(f => f.IsWorkingFile);
+                            var deltaSaysWorking = LiveTrackingFileModel.IsWorkingStatus((updatedStatus ?? string.Empty).Trim());
 
                             // If the delta indicates the user is working but the files array doesn't include any working file,
                             // ensure we still have at least one working file in the session so IsActive stays true.
@@ -741,7 +681,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                             // If server omitted files[] in delta, keep session active based on top-level status.
                             if (deltaSaysWorkingTop && session.Files != null)
                             {
-                                var hasWorking = session.Files.Any(f => IsWorkingStatusTop((f?.FileStatus ?? string.Empty).Trim()));
+                                var hasWorking = session.Files.Any(f => f.IsWorkingFile);
                                 if (!hasWorking)
                                 {
                                     LiveTrackingFileModel? existing = null;
@@ -805,57 +745,18 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                             var newFiles = new List<LiveTrackingFileModel>();
                             foreach (var updatedFile in filesArr.EnumerateArray())
                             {
-                                var fname = (updatedFile.TryGetProperty("fileName", out var fnEl) || updatedFile.TryGetProperty("file_name", out fnEl)) ? fnEl.GetString() ?? "" : "";
-                                string fStatus = string.Empty;
-                                if ((updatedFile.TryGetProperty("fileStatus", out var fStatusEl) || updatedFile.TryGetProperty("file_status", out fStatusEl))
-                                    && fStatusEl.ValueKind == JsonValueKind.String)
-                                {
-                                    fStatus = fStatusEl.GetString() ?? string.Empty;
-                                }
-                                if (string.IsNullOrWhiteSpace(fStatus))
+                                var f = ParseFileFromJson(updatedFile);
+                                if (string.IsNullOrWhiteSpace(f.FileStatus))
                                 {
                                     var top = (updatedStatus ?? string.Empty).Trim();
-                                    if (string.Equals(top, "working", StringComparison.OrdinalIgnoreCase)
-                                        || string.Equals(top, "in_progress", StringComparison.OrdinalIgnoreCase)
-                                        || string.Equals(top, "in progress", StringComparison.OrdinalIgnoreCase)
-                                        || string.Equals(top, "in-progress", StringComparison.OrdinalIgnoreCase)
-                                        || string.Equals(top, "inprogress", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        fStatus = top;
-                                    }
+                                    if (LiveTrackingFileModel.IsWorkingStatus(top))
+                                        f.FileStatus = top;
                                 }
-                                var fTime = (updatedFile.TryGetProperty("timeSpent", out var ftEl) || updatedFile.TryGetProperty("time_spent", out ftEl)) ? ftEl.GetDouble() / 60.0 : 0;
-                                
-                                DateTime? startTime = null;
-                                if ((updatedFile.TryGetProperty("startedAt", out var saEl) || updatedFile.TryGetProperty("started_at", out saEl)) && saEl.ValueKind == JsonValueKind.String)
-                                {
-                                    var saStr = saEl.GetString();
-                                    if (!string.IsNullOrWhiteSpace(saStr)) startTime = DateTime.Parse(saStr);
-                                }
-                                DateTime? endTime = null;
-                                if ((updatedFile.TryGetProperty("completedAt", out var caEl) || updatedFile.TryGetProperty("completed_at", out caEl)) && caEl.ValueKind == JsonValueKind.String)
-                                {
-                                    var caStr = caEl.GetString();
-                                    if (!string.IsNullOrWhiteSpace(caStr)) endTime = DateTime.Parse(caStr);
-                                }
-
-                                newFiles.Add(new LiveTrackingFileModel
-                                {
-                                    FileName = fname,
-                                    FileStatus = fStatus,
-                                    TimeSpent = fTime,
-                                    StartTime = startTime,
-                                    EndTime = endTime
-                                });
+                                newFiles.Add(f);
                             }
 
-                            // Sort: working files first
-                            foreach (var f in newFiles
-                                .OrderBy(f => string.Equals(f.FileStatus, "working", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
-                                .ThenByDescending(f => f.StartTime ?? f.EndTime ?? DateTime.MinValue))
-                            {
+                            foreach (var f in SortFilesByStatus(newFiles))
                                 newSession.Files.Add(f);
-                            }
                         }
 
                         _allData.Add(newSession);
@@ -1099,76 +1000,46 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                     return result;
                 }
 
+                LiveTrackingSnapshot? snapshot;
                 if (DateFrom.HasValue && DateTo.HasValue)
                 {
                     var from = DateFrom.Value.ToString("yyyy-MM-dd");
                     var to = DateTo.Value.ToString("yyyy-MM-dd");
-                    var snapshot = await _dataService.GetLiveTrackingDataRangeAsync(from, to);
-
-                    var incomingWorkLogs = snapshot?.WorkLogs ?? new List<LiveTrackingSessionModel>();
-                    var incomingSessions = snapshot?.Sessions?.Where(s => s != null).ToList() ?? new List<TrackerUserSessionModel>();
-
-                    if (incomingWorkLogs.Count == 0 && previousWorkLogs != null && previousWorkLogs.Count > 0)
-                    {
-                        Debug.WriteLine("[LiveTrackingViewModel] Snapshot reload returned 0 worklogs; keeping previous worklogs.");
-                        _allData = previousWorkLogs;
-                        _allSessionData = previousSessions ?? new List<TrackerUserSessionModel>();
-                    }
-                    else
-                    {
-                        PreserveRecentActiveSessions(incomingWorkLogs);
-                        _allData = MergeWorkLogs(previousWorkLogs, incomingWorkLogs, KeyOf, ToUtcSafe);
-                        _allSessionData = incomingSessions;
-
-                        PauseTab.ResetSessionSnapshot();
-                        if (snapshot?.Sessions != null)
-                        {
-                            foreach (var s in snapshot.Sessions)
-                            {
-                                if (s == null) continue;
-                                PauseTab.ApplySessionUpdate(
-                                    s.Username,
-                                    s.FirstLoginAt,
-                                    s.IsActive ? null : s.LastLogoutAt,
-                                    s.TotalDurationSeconds
-                                );
-                            }
-                        }
-                    }
+                    snapshot = await _dataService.GetLiveTrackingDataRangeAsync(from, to);
                 }
                 else
                 {
                     var selectedDate = SelectedDate.ToString("yyyy-MM-dd");
-                    var snapshot = await _dataService.GetLiveTrackingDataAsync(selectedDate);
+                    snapshot = await _dataService.GetLiveTrackingDataAsync(selectedDate);
+                }
 
-                    var incomingWorkLogs = snapshot?.WorkLogs ?? new List<LiveTrackingSessionModel>();
-                    var incomingSessions = snapshot?.Sessions?.Where(s => s != null).ToList() ?? new List<TrackerUserSessionModel>();
+                var incomingWorkLogs = snapshot?.WorkLogs ?? new List<LiveTrackingSessionModel>();
+                var incomingSessions = snapshot?.Sessions?.Where(s => s != null).ToList() ?? new List<TrackerUserSessionModel>();
 
-                    if (incomingWorkLogs.Count == 0 && previousWorkLogs != null && previousWorkLogs.Count > 0)
+                if (incomingWorkLogs.Count == 0 && previousWorkLogs != null && previousWorkLogs.Count > 0)
+                {
+                    Debug.WriteLine("[LiveTrackingViewModel] Snapshot reload returned 0 worklogs; keeping previous.");
+                    _allData = previousWorkLogs;
+                    _allSessionData = previousSessions ?? new List<TrackerUserSessionModel>();
+                }
+                else
+                {
+                    PreserveRecentActiveSessions(incomingWorkLogs);
+                    _allData = MergeWorkLogs(previousWorkLogs, incomingWorkLogs, KeyOf, ToUtcSafe);
+                    _allSessionData = incomingSessions;
+
+                    PauseTab.ResetSessionSnapshot();
+                    if (snapshot?.Sessions != null)
                     {
-                        Debug.WriteLine("[LiveTrackingViewModel] Snapshot reload returned 0 worklogs; keeping previous worklogs.");
-                        _allData = previousWorkLogs;
-                        _allSessionData = previousSessions ?? new List<TrackerUserSessionModel>();
-                    }
-                    else
-                    {
-                        PreserveRecentActiveSessions(incomingWorkLogs);
-                        _allData = MergeWorkLogs(previousWorkLogs, incomingWorkLogs, KeyOf, ToUtcSafe);
-                        _allSessionData = incomingSessions;
-
-                        PauseTab.ResetSessionSnapshot();
-                        if (snapshot?.Sessions != null)
+                        foreach (var s in snapshot.Sessions)
                         {
-                            foreach (var s in snapshot.Sessions)
-                            {
-                                if (s == null) continue;
-                                PauseTab.ApplySessionUpdate(
-                                    s.Username,
-                                    s.FirstLoginAt,
-                                    s.IsActive ? null : s.LastLogoutAt,
-                                    s.TotalDurationSeconds
-                                );
-                            }
+                            if (s == null) continue;
+                            PauseTab.ApplySessionUpdate(
+                                s.Username,
+                                s.FirstLoginAt,
+                                s.IsActive ? null : s.LastLogoutAt,
+                                s.TotalDurationSeconds
+                            );
                         }
                     }
                 }

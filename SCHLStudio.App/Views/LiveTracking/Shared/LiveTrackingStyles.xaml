@@ -211,7 +211,7 @@
                                       FocusVisualStyle="{x:Null}">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
-                                    <ContentPresenter />
+                                    <ContentPresenter TextBlock.Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
                                 </ControlTemplate>
                             </ToggleButton.Template>
                             <Border x:Name="Bd"
@@ -229,6 +229,7 @@
                                                       Margin="{TemplateBinding Padding}"
                                                       VerticalAlignment="Center"
                                                       HorizontalAlignment="Left"
+                                                      TextBlock.Foreground="{TemplateBinding Foreground}"
                                                       Content="{TemplateBinding SelectionBoxItem}"
                                                       ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                                       ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />

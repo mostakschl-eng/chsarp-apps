@@ -72,6 +72,8 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
         // ─── Last data for re-filtering ───
         private List<LiveTrackingSessionModel> _lastFilteredWorkLogs = new();
         private List<TrackerUserSessionModel> _lastSessions = new();
+        private HashSet<string>? _savedExpandedPauseKeys;
+        private bool _isRebuilding;
 
         public UserSummaryTabViewModel()
         {
@@ -108,10 +110,25 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
 
                 var rows = BuildRows(logs, _lastSessions);
 
+                // Save expanded pause keys BEFORE clearing users (which triggers SelectedUser=null → UpdateSelectedDetails → clears pauses)
+                _savedExpandedPauseKeys = new HashSet<string>(
+                    _selectedUserPauses
+                        .Where(p => p.IsExpanded)
+                        .Select(p => $"{p.ClientCode}|{p.WorkType}|{p.StartTime:yyyy-MM-dd HH:mm:ss}"),
+                    StringComparer.Ordinal);
+
+                // Guard: prevent intermediate cascades from _users.Clear() / ApplySearchFilter()
+                // from consuming _savedExpandedPauseKeys prematurely.
+                _isRebuilding = true;
+
                 _users.Clear();
                 foreach (var r in rows) _users.Add(r);
 
                 ApplySearchFilter();
+
+                // Lift the guard before the final selection restore so that
+                // UpdateSelectedDetails runs exactly once with the saved keys.
+                _isRebuilding = false;
 
                 // Restore selection
                 if (!string.IsNullOrWhiteSpace(prevSelectedKey))
@@ -129,6 +146,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
             }
             catch (Exception ex)
             {
+                _isRebuilding = false;
                 Debug.WriteLine($"[UserSummaryTabViewModel] RebuildAll error: {ex.Message}");
             }
         }
@@ -170,8 +188,16 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
 
         private void UpdateSelectedDetails()
         {
+            // Skip intermediate calls triggered by _users.Clear() / ApplySearchFilter() cascade.
+            // The real call happens after _isRebuilding is set back to false.
+            if (_isRebuilding) return;
+
             try
             {
+                // Consume saved expanded keys (saved in RebuildAll before the clear-cascade)
+                var expandedKeys = _savedExpandedPauseKeys ?? new HashSet<string>(StringComparer.Ordinal);
+                _savedExpandedPauseKeys = null;
+
                 _selectedWorkLogs.Clear();
                 _selectedUserPauses.Clear();
                 _selectedUserAllPauseReasons.Clear();
@@ -200,7 +226,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                     }
                 }
 
-                // Build pause details per pause session (keep client/work/pause-time row granularity)
+                // Build pause details per work log session (expandable rows)
                 foreach (var wl in userLogs.Where(l => l.PauseCount > 0 || l.PauseTime > 0))
                 {
                     var pauseReasons = (wl.PauseReasons ?? new List<string>())
@@ -208,13 +234,9 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                         .Select(r => r.Trim())
                         .ToList();
 
-                    var reasonText = !string.IsNullOrWhiteSpace(wl.LatestPauseReason) && wl.LatestPauseReason != "—"
-                        ? wl.LatestPauseReason
-                        : (pauseReasons.FirstOrDefault() ?? "—");
-
-                    _selectedUserPauses.Add(new PauseDetailModel
+                    var detail = new PauseDetailModel
                     {
-                        Reason = reasonText,
+                        Reason = "All",
                         PauseReasons = pauseReasons,
                         ClientCode = wl.ClientCode ?? "—",
                         WorkType = wl.WorkTypeDisplay ?? "—",
@@ -222,7 +244,26 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                         EndTime = wl.UpdatedAt != default ? (DateTime?)wl.UpdatedAt : null,
                         Duration = wl.PauseTime,
                         PauseCount = wl.PauseCount,
-                    });
+                    };
+
+                    // Restore expanded state
+                    var key = $"{detail.ClientCode}|{detail.WorkType}|{detail.StartTime:yyyy-MM-dd HH:mm:ss}";
+                    if (expandedKeys.Contains(key))
+                        detail.IsExpanded = true;
+
+                    // Populate expandable sub-items with full data from parent session
+                    if (wl.PauseReasonDetails != null)
+                    {
+                        foreach (var item in wl.PauseReasonDetails)
+                        {
+                            item.ClientCode = wl.ClientCode ?? "—";
+                            item.WorkType = wl.WorkTypeDisplay ?? "—";
+                            item.PauseCount = wl.PauseCount;
+                            detail.Items.Add(item);
+                        }
+                    }
+
+                    _selectedUserPauses.Add(detail);
                 }
             }
             catch (Exception ex)
@@ -252,7 +293,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
 
             return logs.Where(l =>
             {
-                var dt = l.UpdatedAt.ToLocalTime().Date;
+                var dt = LiveTrackingFileModel.ToDhakaTime(l.UpdatedAt).Date;
                 return dt >= from && dt < to;
             }).ToList();
         }
@@ -289,10 +330,10 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                     var todayStart = DateTime.Today;
                     var todayEnd = todayStart.AddDays(1);
 
-                    var startLocal = firstLoginAt.Value.ToLocalTime();
+                    var startLocal = LiveTrackingFileModel.ToDhakaTime(firstLoginAt.Value);
                     var endLocal = isActive
                         ? DateTime.Now
-                        : (lastLogoutAt?.ToLocalTime() ?? DateTime.Now);
+                        : (lastLogoutAt.HasValue ? LiveTrackingFileModel.ToDhakaTime(lastLogoutAt.Value) : DateTime.Now);
 
                     if (endLocal > todayEnd) endLocal = todayEnd;
                     if (startLocal < todayStart) startLocal = todayStart;
@@ -353,7 +394,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
             foreach (var key in allKeys)
             {
                 var logs = workLogsByUser.TryGetValue(key, out var list) ? list : new List<LiveTrackingSessionModel>();
-                var totalWork = logs.Sum(l => l.TotalTimes);
+                var totalWork = logs.Sum(l => l.ComputedTotalTimes);
                 var totalPause = logs.Sum(l => l.PauseTime);
                 var completedFiles = logs
                     .SelectMany(l => l.Files)
@@ -483,8 +524,8 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
         public string TotalWorkFormatted => LiveTrackingFileModel.FormatMinutes(TotalWorkMinutes);
         public string TotalPauseFormatted => LiveTrackingFileModel.FormatMinutes(TotalPauseMinutes);
         public string IdleFormatted => LiveTrackingFileModel.FormatMinutes(IdleMinutes);
-        public string FirstLoginFormatted => FirstLoginAt.HasValue ? FirstLoginAt.Value.ToLocalTime().ToString("hh:mm tt") : "—";
-        public string LastLogoutFormatted => LastLogoutAt.HasValue ? LastLogoutAt.Value.ToLocalTime().ToString("hh:mm tt") : "—";
+        public string FirstLoginFormatted => FirstLoginAt.HasValue ? LiveTrackingFileModel.ToDhakaTime(FirstLoginAt.Value).ToString("hh:mm tt") : "—";
+        public string LastLogoutFormatted => LastLogoutAt.HasValue ? LiveTrackingFileModel.ToDhakaTime(LastLogoutAt.Value).ToString("hh:mm tt") : "—";
         public string TotalDurationTodayFormatted => LiveTrackingFileModel.FormatMinutes(TotalDurationTodayMinutes);
     }
 }

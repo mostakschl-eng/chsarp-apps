@@ -30,36 +30,25 @@ namespace SCHLStudio.App.Views.Windows
             var isAdmin = string.Equals(r, "admin", StringComparison.OrdinalIgnoreCase);
             var isSuperAdmin = string.Equals(r, "superadmin", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(r, "super admin", StringComparison.OrdinalIgnoreCase);
+            var isEmployee = string.Equals(r, "employee", StringComparison.OrdinalIgnoreCase);
+            var isQc = string.Equals(r, "qc", StringComparison.OrdinalIgnoreCase);
+            var isQcManager = string.Equals(r, "qcmanager", StringComparison.OrdinalIgnoreCase);
 
             try
             {
-                if (!isAdmin && !isSuperAdmin && string.Equals(r, "employee", StringComparison.OrdinalIgnoreCase))
+                var hiddenStyle = (Style)FindResource("HiddenShellTabItemStyle");
+
+                if (isEmployee)
                 {
-                    SearchTab.Style = (Style)FindResource("HiddenShellTabItemStyle");
+                    SearchTab.Style = hiddenStyle;
+                    LiveTrackingTab.Style = hiddenStyle;
+                    SettingsTab.Style = hiddenStyle;
                 }
-            }
-            catch
-            {
-            }
-
-            try
-            {
-                if (isAdmin)
+                else if (isAdmin)
                 {
-                    EnsureBackgroundLiveTrackingStarted(isAdmin, isSuperAdmin);
-
-                    DashboardTab.Style = (Style)FindResource("HiddenShellTabItemStyle");
-                    SettingsTab.Style = (Style)FindResource("HiddenShellTabItemStyle");
-
-                    try
-                    {
-                        FilesTab.ClearValue(TabItem.StyleProperty);
-                        SearchTab.ClearValue(TabItem.StyleProperty);
-                        LiveTrackingTab.ClearValue(TabItem.StyleProperty);
-                    }
-                    catch
-                    {
-                    }
+                    FilesTab.Style = hiddenStyle;
+                    DashboardTab.Style = hiddenStyle;
+                    SettingsTab.Style = hiddenStyle;
 
                     try
                     {
@@ -67,49 +56,43 @@ namespace SCHLStudio.App.Views.Windows
                         {
                             MainTabs.Items.Remove(LiveTrackingTab);
                             MainTabs.Items.Remove(SearchTab);
-                            MainTabs.Items.Remove(FilesTab);
 
                             MainTabs.Items.Add(LiveTrackingTab);
                             MainTabs.Items.Add(SearchTab);
-                            MainTabs.Items.Add(FilesTab);
-                        }
-                    }
-                    catch
-                    {
-                    }
 
-                    try
-                    {
-                        if (MainTabs is not null)
-                        {
                             MainTabs.SelectedItem = LiveTrackingTab;
                         }
                     }
                     catch
                     {
                     }
-
-                    return;
                 }
-            }
-            catch
-            {
-            }
-
-            try
-            {
-                var hideLiveTracking = !isAdmin && !isSuperAdmin;
-
-                if (hideLiveTracking)
+                else if (isQc)
                 {
-                    LiveTrackingTab.Style = (Style)FindResource("HiddenShellTabItemStyle");
+                    LiveTrackingTab.Style = hiddenStyle;
+                    SettingsTab.Style = hiddenStyle;
+                }
+                else if (isQcManager)
+                {
+                    SettingsTab.Style = hiddenStyle;
+                }
+                else if (isSuperAdmin)
+                {
+                    // SuperAdmin has access to all tabs
+                }
+                else
+                {
+                    // Fallback for unknown roles (treat as employee)
+                    SearchTab.Style = hiddenStyle;
+                    LiveTrackingTab.Style = hiddenStyle;
+                    SettingsTab.Style = hiddenStyle;
                 }
             }
             catch
             {
             }
 
-            EnsureBackgroundLiveTrackingStarted(isAdmin, isSuperAdmin);
+            EnsureBackgroundLiveTrackingStarted(isAdmin, isSuperAdmin, isQcManager);
 
             try
             {
@@ -240,11 +223,11 @@ namespace SCHLStudio.App.Views.Windows
             }
         }
 
-        private static void EnsureBackgroundLiveTrackingStarted(bool isAdmin, bool isSuperAdmin)
+        private static void EnsureBackgroundLiveTrackingStarted(bool isAdmin, bool isSuperAdmin, bool isQcManager)
         {
             try
             {
-                if (!isAdmin && !isSuperAdmin)
+                if (!isAdmin && !isSuperAdmin && !isQcManager)
                 {
                     return;
                 }

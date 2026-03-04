@@ -258,50 +258,107 @@
                 <!-- 3) Pause Reasons — Header row, NO border -->
                 <Border Background="{DynamicResource BgCardBrush}" CornerRadius="10" Margin="0,0,0,12" Padding="0">
                     <StackPanel>
-                        <Grid Margin="14,12,14,10">
+                        <Grid Margin="16,12,16,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2*"/>
                                 <ColumnDefinition Width="1.5*"/>
                                 <ColumnDefinition Width="1.5*"/>
                                 <ColumnDefinition Width="1*"/>
                                 <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1.3*"/>
+                                <ColumnDefinition Width="1.3*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="PAUSE REASON" Style="{StaticResource LiveGridHeaderTextStyle}"/>
                             <TextBlock Grid.Column="1" Text="CLIENT" Style="{StaticResource LiveGridHeaderTextStyle}"/>
                             <TextBlock Grid.Column="2" Text="WORK TYPE" Style="{StaticResource LiveGridHeaderTextStyle}"/>
-                            <TextBlock Grid.Column="3" Text="START TIME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
-                            <TextBlock Grid.Column="4" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
-                            <TextBlock Grid.Column="5" Text="TOTAL PAUSE" Style="{StaticResource LiveGridHeaderTextStyle}"/>
-                            <TextBlock Grid.Column="6" Text="PAUSE COUNT" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="3" Text="TOTAL PAUSE" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="4" Text="PAUSE COUNT" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="5" Text="START TIME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
+                            <TextBlock Grid.Column="6" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}"/>
                         </Grid>
                         <ItemsControl ItemsSource="{Binding UserSummaryTab.SelectedUserPauses}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Padding="14,10">
+                                    <ContentControl Style="{StaticResource WorkLogRowStyle}">
                                         <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="2*"/>
-                                                <ColumnDefinition Width="1.5*"/>
-                                                <ColumnDefinition Width="1.5*"/>
-                                                <ColumnDefinition Width="1*"/>
-                                                <ColumnDefinition Width="1*"/>
-                                                <ColumnDefinition Width="1*"/>
-                                                <ColumnDefinition Width="1*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
-                                                <Ellipse Width="6" Height="6" Fill="#FF9500" Margin="0,0,8,0"/>
-                                                <TextBlock Text="{Binding Reason}" Style="{StaticResource LiveFileTextStyle}" TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                            <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveFileTextStyle}" Margin="0,0,6,0" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding WorkType}" Style="{StaticResource LiveFileTextStyle}" Margin="0,0,6,0" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Grid.Column="3" Text="{Binding StartTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
-                                            <TextBlock Grid.Column="4" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
-                                            <TextBlock Grid.Column="5" Text="{Binding DurationFormatted}" Style="{StaticResource LiveFileTextStyle}" Foreground="#FF9500"/>
-                                            <TextBlock Grid.Column="6" Text="{Binding PauseCount}" Style="{StaticResource LiveFileTextStyle}"/>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Main Row: Arrow + "All" + all summary data -->
+                                            <Grid Grid.Row="0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="2*"/>
+                                                    <ColumnDefinition Width="1.5*"/>
+                                                    <ColumnDefinition Width="1.5*"/>
+                                                    <ColumnDefinition Width="1*"/>
+                                                    <ColumnDefinition Width="1*"/>
+                                                    <ColumnDefinition Width="1.3*"/>
+                                                    <ColumnDefinition Width="1.3*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                                                    <ToggleButton IsChecked="{Binding IsExpanded, Mode=TwoWay}" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Cursor="Hand" Margin="0,0,6,0">
+                                                        <ToggleButton.Style>
+                                                            <Style TargetType="ToggleButton">
+                                                                <Setter Property="Template">
+                                                                    <Setter.Value>
+                                                                        <ControlTemplate TargetType="ToggleButton">
+                                                                            <TextBlock x:Name="Icon" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#999999" VerticalAlignment="Center"/>
+                                                                            <ControlTemplate.Triggers>
+                                                                                <Trigger Property="IsChecked" Value="True">
+                                                                                    <Setter TargetName="Icon" Property="Text" Value="&#xE70D;"/>
+                                                                                    <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                                                                </Trigger>
+                                                                            </ControlTemplate.Triggers>
+                                                                        </ControlTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </Style>
+                                                        </ToggleButton.Style>
+                                                    </ToggleButton>
+                                                    <TextBlock Text="{Binding Reason}" Style="{StaticResource LiveRowBoldTextStyle}"/>
+                                                </StackPanel>
+
+                                                <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveRowBoldTextStyle}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding WorkType}" Style="{StaticResource LiveRowTextStyle}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding DurationFormatted}" Style="{StaticResource LiveRowTextStyle}" FontWeight="SemiBold" Foreground="#FF9500"/>
+                                                <TextBlock Grid.Column="4" Text="{Binding PauseCount}" Style="{StaticResource LiveRowTextStyle}"/>
+                                                <TextBlock Grid.Column="5" Text="{Binding StartTimeFormatted}" Style="{StaticResource LiveRowTextStyle}"/>
+                                                <TextBlock Grid.Column="6" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveRowTextStyle}"/>
+                                            </Grid>
+
+                                            <!-- Expanded: Full 7-column rows with dividers -->
+                                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}" Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel>
+                                                            <Border BorderBrush="#30808080" BorderThickness="0,1,0,0" Margin="6,0"/>
+                                                            <Grid Margin="0,10,0,10">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                    <ColumnDefinition Width="1.5*"/>
+                                                                    <ColumnDefinition Width="1.5*"/>
+                                                                    <ColumnDefinition Width="1*"/>
+                                                                    <ColumnDefinition Width="1*"/>
+                                                                    <ColumnDefinition Width="1.3*"/>
+                                                                    <ColumnDefinition Width="1.3*"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Column="0" Text="{Binding Reason}" Style="{StaticResource LiveFileTextStyle}" TextTrimming="CharacterEllipsis" Margin="28,0,6,0"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveFileTextStyle}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                                                                <TextBlock Grid.Column="2" Text="{Binding WorkType}" Style="{StaticResource LiveFileTextStyle}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                                                                <TextBlock Grid.Column="3" Text="{Binding DurationFormatted}" Style="{StaticResource LiveFileTextStyle}" Foreground="#FF9500"/>
+                                                                <TextBlock Grid.Column="4" Text="{Binding PauseCount}" Style="{StaticResource LiveFileTextStyle}"/>
+                                                                <TextBlock Grid.Column="5" Text="{Binding StartTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
+                                                                <TextBlock Grid.Column="6" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
+                                                            </Grid>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                         </Grid>
-                                    </Border>
+                                    </ContentControl>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -312,11 +369,13 @@
                 <Border Background="{DynamicResource BgCardBrush}" CornerRadius="10" Padding="14,10" Margin="0,0,0,6">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="1.5*"/>
-                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="1.3*"/>
+                            <ColumnDefinition Width="1.1*"/>
+                            <ColumnDefinition Width="0.8*"/>
                             <ColumnDefinition Width="1*"/>
                             <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="0.9*"/>
                             <ColumnDefinition Width="1*"/>
                             <ColumnDefinition Width="1*"/>
                         </Grid.ColumnDefinitions>
@@ -324,9 +383,11 @@
                         <TextBlock Grid.Column="1" Text="CLIENT" Style="{StaticResource LiveGridHeaderTextStyle}" Margin="6,0,0,0" />
                         <TextBlock Grid.Column="2" Text="WORK TYPE" Style="{StaticResource LiveGridHeaderTextStyle}" Margin="6,0,0,0" />
                         <TextBlock Grid.Column="3" Text="SHIFT" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
-                        <TextBlock Grid.Column="4" Text="WORK" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
-                        <TextBlock Grid.Column="5" Text="PAUSE" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
-                        <TextBlock Grid.Column="6" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="WORK TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="5" Text="PAUSE TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="6" Text="AVG TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="7" Text="START TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Grid.Column="8" Text="END TIME" Style="{StaticResource LiveGridHeaderTextStyle}" HorizontalAlignment="Center" />
                     </Grid>
                 </Border>
 
@@ -344,11 +405,13 @@
                                     <!-- Main Row -->
                                     <Grid Grid.Row="0">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="2*"/>
-                                            <ColumnDefinition Width="1.5*"/>
-                                            <ColumnDefinition Width="1.5*"/>
+                                            <ColumnDefinition Width="30"/>
+                                            <ColumnDefinition Width="1.3*"/>
+                                            <ColumnDefinition Width="1.1*"/>
+                                            <ColumnDefinition Width="0.8*"/>
                                             <ColumnDefinition Width="1*"/>
                                             <ColumnDefinition Width="1*"/>
+                                            <ColumnDefinition Width="0.9*"/>
                                             <ColumnDefinition Width="1*"/>
                                             <ColumnDefinition Width="1*"/>
                                         </Grid.ColumnDefinitions>
@@ -373,12 +436,14 @@
                                             </ToggleButton.Style>
                                         </ToggleButton>
 
-                                        <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="6,0,10,0" />
-                                        <TextBlock Grid.Column="2" Text="{Binding WorkTypeDisplay}" Style="{StaticResource LiveRowTextStyle}" Margin="6,0,10,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding ClientCode}" Style="{StaticResource LiveRowBoldTextStyle}" Margin="6,0,10,0" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="2" Text="{Binding WorkTypeDisplay}" Style="{StaticResource LiveRowTextStyle}" Margin="6,0,10,0" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Grid.Column="3" Text="{Binding ShiftDisplay}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
                                         <TextBlock Grid.Column="4" Text="{Binding TotalTimesFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center" FontWeight="SemiBold" Foreground="#34C759"/>
                                         <TextBlock Grid.Column="5" Text="{Binding PauseTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center" FontWeight="SemiBold" Foreground="#FF9500"/>
-                                        <TextBlock Grid.Column="6" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding AvgTimePerFile}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center" FontWeight="SemiBold" Foreground="#007AFF"/>
+                                        <TextBlock Grid.Column="7" Text="{Binding StartTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="8" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveRowTextStyle}" TextAlignment="Center"/>
                                     </Grid>
 
                                     <!-- Expanded: File Details — NO border -->
@@ -404,8 +469,9 @@
                                                 <ItemsControl ItemsSource="{Binding Files}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Border Padding="12,10">
-                                                                <Grid>
+                                                            <StackPanel>
+                                                                <Border BorderBrush="#30808080" BorderThickness="0,1,0,0" Margin="6,0"/>
+                                                                <Grid Margin="12,10,12,10">
                                                                     <Grid.ColumnDefinitions>
                                                                         <ColumnDefinition Width="3*"/>
                                                                         <ColumnDefinition Width="1.2*"/>
@@ -435,7 +501,7 @@
                                                                     <TextBlock Grid.Column="4" Text="{Binding EndTimeFormatted}" Style="{StaticResource LiveFileTextStyle}"/>
                                                                     <TextBlock Grid.Column="5" Text="{Binding Report}" Style="{StaticResource LiveFileTextStyle}" TextTrimming="CharacterEllipsis"/>
                                                                 </Grid>
-                                                            </Border>
+                                                            </StackPanel>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>

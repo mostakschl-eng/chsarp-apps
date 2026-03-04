@@ -54,7 +54,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                 CompletedFiles = prodSessions.SelectMany(s => s.Files)
                     .Count(f => string.Equals(f.FileStatus, "done", StringComparison.OrdinalIgnoreCase));
 
-                var totalTime = prodSessions.Sum(s => s.TotalTimes);
+                var totalTime = prodSessions.Sum(s => s.ComputedTotalTimes);
                 AvgTimePerFile = TotalFiles > 0 ? LiveTrackingFileModel.FormatMinutes(totalTime / TotalFiles) : "0m";
 
                 // Sync _productionRows without clearing to prevent UI flicker

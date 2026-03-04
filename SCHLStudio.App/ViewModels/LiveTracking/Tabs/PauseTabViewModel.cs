@@ -242,7 +242,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                 {
                     var userSessions = group.Sessions ?? new List<LiveTrackingSessionModel>();
 
-                    double totalWork = userSessions.Sum(s => s.TotalTimes);
+                    double totalWork = userSessions.Sum(s => s.ComputedTotalTimes);
                     double totalPause = userSessions.Sum(s => s.PauseTime);
                     int totalPauseCount = userSessions.Sum(s => s.PauseCount);
                     grandTotalPauseTime += totalPause;

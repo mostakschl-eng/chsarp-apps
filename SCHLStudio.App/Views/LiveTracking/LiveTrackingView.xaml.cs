@@ -55,7 +55,8 @@ namespace SCHLStudio.App.Views.LiveTracking
                     var role = (ctx.CurrentRole ?? string.Empty).Trim();
                     return string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase)
                         || string.Equals(role, "superadmin", StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(role, "super admin", StringComparison.OrdinalIgnoreCase);
+                        || string.Equals(role, "super admin", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(role, "qcmanager", StringComparison.OrdinalIgnoreCase);
                 }
             }
             catch

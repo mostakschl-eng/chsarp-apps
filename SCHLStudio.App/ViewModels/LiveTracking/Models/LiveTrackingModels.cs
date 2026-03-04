@@ -86,16 +86,40 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
         public string FileStatusDisplay =>
             string.IsNullOrEmpty(FileStatus) ? "—" : CultureInfo.CurrentCulture.TextInfo.ToTitleCase(FileStatus.ToLower());
 
-        public string TimeSpentFormatted => FormatMinutes(TimeSpent);
+        /// <summary>True when this file is currently being worked on.</summary>
+        public bool IsWorkingFile => IsWorkingStatus((FileStatus ?? string.Empty).Trim());
+
+        /// <summary>
+        /// For working files: max(DB accumulated, wall-clock elapsed since started_at).
+        /// For completed files: DB value directly.
+        /// </summary>
+        public double EffectiveTimeSpent
+        {
+            get
+            {
+                if (IsWorkingFile && StartTime.HasValue)
+                {
+                    var startUtc = StartTime.Value.Kind == DateTimeKind.Utc
+                        ? StartTime.Value
+                        : StartTime.Value.ToUniversalTime();
+                    var elapsed = (DateTime.UtcNow - startUtc).TotalMinutes;
+                    return elapsed > 0 ? Math.Max(TimeSpent, elapsed) : TimeSpent;
+                }
+                return TimeSpent;
+            }
+        }
+
+        public string TimeSpentFormatted => FormatMinutes(EffectiveTimeSpent);
 
         public string StartTimeFormatted =>
-            StartTime.HasValue ? StartTime.Value.ToLocalTime().ToString("hh:mm tt") : "—";
+            StartTime.HasValue ? ToDhakaTime(StartTime.Value).ToString("hh:mm tt") : "—";
 
         public string EndTimeFormatted =>
-            EndTime.HasValue ? EndTime.Value.ToLocalTime().ToString("hh:mm tt") : "—";
+            EndTime.HasValue ? ToDhakaTime(EndTime.Value).ToString("hh:mm tt") : "—";
 
         public void NotifyLiveTick()
         {
+            OnPropertyChanged(nameof(EffectiveTimeSpent));
             OnPropertyChanged(nameof(TimeSpentFormatted));
         }
 
@@ -109,6 +133,28 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
             if (hours > 0) return $"{hours}h";
             if (mins > 0) return $"{mins}m";
             return $"{secs}s";
+        }
+
+        // ── Shared Helpers ──────────────────────────────────────────────
+
+        private static readonly TimeZoneInfo _dhakaZone =
+            TimeZoneInfo.FindSystemTimeZoneById("Bangladesh Standard Time");
+
+        /// <summary>Convert any DateTime to Dhaka (UTC+6) for display.</summary>
+        internal static DateTime ToDhakaTime(DateTime dt)
+        {
+            var utc = dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+            return TimeZoneInfo.ConvertTimeFromUtc(utc, _dhakaZone);
+        }
+
+        /// <summary>Returns true for any "working" / "in_progress" variant.</summary>
+        internal static bool IsWorkingStatus(string status)
+        {
+            return string.Equals(status, "working", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(status, "in_progress", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(status, "in progress", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(status, "in-progress", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(status, "inprogress", StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -244,6 +290,13 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
             }
         }
 
+        private List<PauseReasonItemModel> _pauseReasonDetails = new List<PauseReasonItemModel>();
+        public List<PauseReasonItemModel> PauseReasonDetails
+        {
+            get => _pauseReasonDetails;
+            set => SetProperty(ref _pauseReasonDetails, value);
+        }
+
         private ObservableCollection<LiveTrackingFileModel> _files = new ObservableCollection<LiveTrackingFileModel>();
         public ObservableCollection<LiveTrackingFileModel> Files
         {
@@ -289,7 +342,23 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
             }
         }
 
-        public string TotalTimesFormatted => LiveTrackingFileModel.FormatMinutes(TotalTimes);
+        /// <summary>
+        /// Sums per-file effective times (computed for working, DB for done);
+        /// uses Math.Max with the DB-level TotalTimes as a floor.
+        /// </summary>
+        public double ComputedTotalTimes
+        {
+            get
+            {
+                if (Files == null || Files.Count == 0) return TotalTimes;
+                double sum = 0;
+                foreach (var f in Files)
+                    sum += f.EffectiveTimeSpent;
+                return Math.Max(sum, TotalTimes);
+            }
+        }
+
+        public string TotalTimesFormatted => LiveTrackingFileModel.FormatMinutes(ComputedTotalTimes);
         public string PauseTimeFormatted => LiveTrackingFileModel.FormatMinutes(PauseTime);
 
         public string AvgTimePerFile
@@ -297,15 +366,15 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
             get
             {
                 if (Files == null || Files.Count == 0) return "—";
-                return LiveTrackingFileModel.FormatMinutes(TotalTimes / Files.Count);
+                return LiveTrackingFileModel.FormatMinutes(ComputedTotalTimes / Files.Count);
             }
         }
 
         public string StartTimeFormatted =>
-            CreatedAt != default ? CreatedAt.ToLocalTime().ToString("hh:mm tt") : "—";
+            CreatedAt != default ? LiveTrackingFileModel.ToDhakaTime(CreatedAt).ToString("hh:mm tt") : "—";
 
         public string EndTimeFormatted =>
-            UpdatedAt != default ? UpdatedAt.ToLocalTime().ToString("hh:mm tt") : "—";
+            UpdatedAt != default ? LiveTrackingFileModel.ToDhakaTime(UpdatedAt).ToString("hh:mm tt") : "—";
 
         public string CurrentFileName
         {
@@ -332,23 +401,12 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
                 foreach (var f in Files)
                 {
                     var status = (f?.FileStatus ?? string.Empty).Trim();
-                    if (IsWorkingStatus(status))
-                    {
+                    if (LiveTrackingFileModel.IsWorkingStatus(status))
                         return true;
-                    }
                 }
 
                 return false;
             }
-        }
-
-        private static bool IsWorkingStatus(string status)
-        {
-            return string.Equals(status, "working", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(status, "in_progress", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(status, "in progress", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(status, "in-progress", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(status, "inprogress", StringComparison.OrdinalIgnoreCase);
         }
 
         public string LatestPauseReason =>
@@ -536,9 +594,9 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
             }
         }
         public string StartTimeFormatted =>
-            StartTime != default ? StartTime.ToLocalTime().ToString("hh:mm tt") : "—";
+            StartTime != default ? LiveTrackingFileModel.ToDhakaTime(StartTime).ToString("hh:mm tt") : "—";
         public string EndTimeFormatted =>
-            EndTime != default ? EndTime.ToLocalTime().ToString("hh:mm tt") : "—";
+            EndTime != default ? LiveTrackingFileModel.ToDhakaTime(EndTime).ToString("hh:mm tt") : "—";
     }
 
     // --- Productivity Tab ---
@@ -601,10 +659,69 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
             string.IsNullOrEmpty(Category) ? "—" : Category.Trim().ToUpperInvariant();
     }
 
+    // --- Pause Reason Item (individual pause entry) ---
+
+    public class PauseReasonItemModel : ViewModelBase
+    {
+        private string _reason = string.Empty;
+        public string Reason { get => _reason; set => SetProperty(ref _reason, value); }
+
+        private string _clientCode = string.Empty;
+        public string ClientCode { get => _clientCode; set => SetProperty(ref _clientCode, value); }
+
+        private string _workType = string.Empty;
+        public string WorkType { get => _workType; set => SetProperty(ref _workType, value); }
+
+        private int _pauseCount;
+        public int PauseCount { get => _pauseCount; set => SetProperty(ref _pauseCount, value); }
+
+        private double _duration;
+        public double Duration
+        {
+            get => _duration;
+            set
+            {
+                if (SetProperty(ref _duration, value))
+                    OnPropertyChanged(nameof(DurationFormatted));
+            }
+        }
+
+        private DateTime? _startTime;
+        public DateTime? StartTime
+        {
+            get => _startTime;
+            set
+            {
+                if (SetProperty(ref _startTime, value))
+                    OnPropertyChanged(nameof(StartTimeFormatted));
+            }
+        }
+
+        private DateTime? _endTime;
+        public DateTime? EndTime
+        {
+            get => _endTime;
+            set
+            {
+                if (SetProperty(ref _endTime, value))
+                    OnPropertyChanged(nameof(EndTimeFormatted));
+            }
+        }
+
+        public string DurationFormatted => LiveTrackingFileModel.FormatMinutes(Duration);
+        public string StartTimeFormatted =>
+            StartTime.HasValue ? LiveTrackingFileModel.ToDhakaTime(StartTime.Value).ToString("hh:mm tt") : "—";
+        public string EndTimeFormatted =>
+            EndTime.HasValue ? LiveTrackingFileModel.ToDhakaTime(EndTime.Value).ToString("hh:mm tt") : "—";
+    }
+
     // --- Pause Tab ---
 
     public class PauseDetailModel : ViewModelBase
     {
+        private bool _isExpanded;
+        public bool IsExpanded { get => _isExpanded; set => SetProperty(ref _isExpanded, value); }
+
         private List<string> _pauseReasons = new List<string>();
         public List<string> PauseReasons
         {
@@ -668,12 +785,15 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
         }
 
         public string StartTimeFormatted =>
-            StartTime != default ? StartTime.ToLocalTime().ToString("hh:mm tt") : "—";
+            StartTime != default ? LiveTrackingFileModel.ToDhakaTime(StartTime).ToString("hh:mm tt") : "—";
             
         public string EndTimeFormatted =>
-            EndTime.HasValue ? EndTime.Value.ToLocalTime().ToString("hh:mm tt") : "—";
+            EndTime.HasValue ? LiveTrackingFileModel.ToDhakaTime(EndTime.Value).ToString("hh:mm tt") : "—";
 
         public string DurationFormatted => LiveTrackingFileModel.FormatMinutes(Duration);
+
+        private ObservableCollection<PauseReasonItemModel> _items = new ObservableCollection<PauseReasonItemModel>();
+        public ObservableCollection<PauseReasonItemModel> Items { get => _items; set => SetProperty(ref _items, value); }
     }
 
     public class PauseUserGroupModel : ViewModelBase
@@ -780,10 +900,10 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
         public string TotalPauseTimeFormatted => LiveTrackingFileModel.FormatMinutes(TotalPauseTime);
         
         public string FirstLoginFormatted =>
-            FirstLogin.HasValue ? FirstLogin.Value.ToLocalTime().ToString("hh:mm tt") : "—";
+            FirstLogin.HasValue ? LiveTrackingFileModel.ToDhakaTime(FirstLogin.Value).ToString("hh:mm tt") : "—";
             
         public string LastLogoutFormatted =>
-            LastLogout.HasValue ? LastLogout.Value.ToLocalTime().ToString("hh:mm tt") : "—";
+            LastLogout.HasValue ? LiveTrackingFileModel.ToDhakaTime(LastLogout.Value).ToString("hh:mm tt") : "—";
         public string TotalDurationTodayFormatted => LiveTrackingFileModel.FormatMinutes(TotalDurationToday);
         public string IdleTimeFormatted => LiveTrackingFileModel.FormatMinutes(IdleTime);
     }
@@ -825,7 +945,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
             string.IsNullOrEmpty(Username) ? "—" : CultureInfo.CurrentCulture.TextInfo.ToTitleCase(Username.ToLower());
 
         public string FirstLoginFormatted =>
-            FirstLogin.HasValue ? FirstLogin.Value.ToLocalTime().ToString("hh:mm tt") : "—";
+            FirstLogin.HasValue ? LiveTrackingFileModel.ToDhakaTime(FirstLogin.Value).ToString("hh:mm tt") : "—";
 
         public string IdleTimeFormatted => LiveTrackingFileModel.FormatMinutes(TotalDurationMinutes);
     }

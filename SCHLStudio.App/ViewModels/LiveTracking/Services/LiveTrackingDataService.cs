@@ -169,10 +169,12 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Services
                     {
                         var sessionId = AppConfig.CurrentTrackerSessionId;
                         var username = ResolveLiveTrackingUsername();
+                        var role = (AppConfig.CurrentAppRole ?? string.Empty).Trim();
                         _ = _socket.EmitAsync("SUBSCRIBE_LIVE_TRACKING", new
                         {
                             sessionId,
                             username,
+                            role,
                         });
                     }
                     catch (Exception ex)
@@ -349,6 +351,17 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Services
                         .Where(x => !string.IsNullOrWhiteSpace(x))
                         .ToList()
                         ?? new List<string>(),
+                    PauseReasonDetails = dto.PauseReasons
+                        ?.Where(x => x != null && !string.IsNullOrWhiteSpace(x.Reason))
+                        .Select(x => new PauseReasonItemModel
+                        {
+                            Reason = (x.Reason ?? "").Trim(),
+                            Duration = x.Duration / 60.0,
+                            StartTime = x.StartedAt,
+                            EndTime = x.CompletedAt,
+                        })
+                        .ToList()
+                        ?? new List<PauseReasonItemModel>(),
                     Files = new System.Collections.ObjectModel.ObservableCollection<LiveTrackingFileModel>()
                 };
 

@@ -149,98 +149,41 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     return;
                 }
 
-                try
+                if (!_vm.IsStarted || _vm.IsPaused)
                 {
-                    if (!_vm.IsStarted || _vm.IsPaused)
-                    {
-                        var divBrush = TryFindResource("DividerBrush") as System.Windows.Media.Brush;
-                        if (divBrush != null) TimerBorder.BorderBrush = divBrush;
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"UpdateTimerBorder brush state error: {ex.Message}");
-                }
-
-                var selectedCount = 0;
-                try
-                {
-                    selectedCount = _vm.SelectedFiles?.Count ?? 0;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"UpdateTimerBorder select count error: {ex.Message}");
-                    selectedCount = 0;
-                }
-
-                if (selectedCount <= 0)
-                {
-                    var divBrush = TryFindResource("DividerBrush") as System.Windows.Media.Brush;
-                    if (divBrush != null) TimerBorder.BorderBrush = divBrush;
+                    if (_cachedDividerBrush != null) TimerBorder.BorderBrush = _cachedDividerBrush;
                     return;
                 }
 
-                var etMinutes = 0;
-                try
+                var selectedCount = _vm.SelectedFiles?.Count ?? 0;
+                if (selectedCount <= 0)
                 {
-                    etMinutes = _jobListRows
-                        .FirstOrDefault(x =>
-                            string.Equals(x.ClientCode, _vm.ActiveJobClientCode, StringComparison.OrdinalIgnoreCase)
-                            && string.Equals(x.FolderPath, _vm.ActiveJobFolderPath, StringComparison.OrdinalIgnoreCase))
-                        ?.ET ?? 0;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"UpdateTimerBorder ET minutes error: {ex.Message}");
-                    etMinutes = 0;
+                    if (_cachedDividerBrush != null) TimerBorder.BorderBrush = _cachedDividerBrush;
+                    return;
                 }
 
+                var etMinutes = _cachedActiveJobEtMinutes;
                 if (etMinutes <= 0)
                 {
-                    var divBrush = TryFindResource("DividerBrush") as System.Windows.Media.Brush;
-                    if (divBrush != null) TimerBorder.BorderBrush = divBrush;
+                    if (_cachedDividerBrush != null) TimerBorder.BorderBrush = _cachedDividerBrush;
                     return;
                 }
 
                 var limit = TimeSpan.FromMinutes(etMinutes);
-                var perFileElapsed = elapsed;
-                try
-                {
-                    perFileElapsed = selectedCount > 0
-                        ? TimeSpan.FromSeconds(elapsed.TotalSeconds / selectedCount)
-                        : elapsed;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"UpdateTimerBorder per-file elapsed error: {ex.Message}");
-                    perFileElapsed = elapsed;
-                }
+                var perFileElapsed = selectedCount > 0
+                    ? TimeSpan.FromSeconds(elapsed.TotalSeconds / selectedCount)
+                    : elapsed;
 
                 var ok = perFileElapsed <= limit;
-
-                try
-                {
-                    var key = ok ? "PrimaryBrush" : "DangerBrush";
-                    var brush = TryFindResource(key) as System.Windows.Media.Brush;
-                    if (brush != null)
-                    {
-                        TimerBorder.BorderBrush = brush;
-                    }
-                    else
-                    {
-                        TimerBorder.BorderBrush = ok ? System.Windows.Media.Brushes.Green : System.Windows.Media.Brushes.Red;
-                    }
-                }
-                catch
-                {
-                    TimerBorder.BorderBrush = ok ? System.Windows.Media.Brushes.Green : System.Windows.Media.Brushes.Red;
-                }
+                var brush = ok ? _cachedPrimaryBrush : _cachedDangerBrush;
+                TimerBorder.BorderBrush = brush
+                    ?? (ok ? System.Windows.Media.Brushes.Green : System.Windows.Media.Brushes.Red);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"UpdateTimerBorder outer error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"UpdateTimerBorder error: {ex.Message}");
             }
         }
+
     }
 }

@@ -104,6 +104,20 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 UpdateTaskMenuActiveHighlight();
                 UpdateSelectedFilesMetaText();
+
+                // Cache the ET value so the timer tick reads a plain int instead of LINQ-scanning.
+                try
+                {
+                    _cachedActiveJobEtMinutes = _jobListRows
+                        .FirstOrDefault(x =>
+                            string.Equals(x.ClientCode, _vm.ActiveJobClientCode, StringComparison.OrdinalIgnoreCase)
+                            && string.Equals(x.FolderPath, _vm.ActiveJobFolderPath, StringComparison.OrdinalIgnoreCase))
+                        ?.ET ?? 0;
+                }
+                catch
+                {
+                    _cachedActiveJobEtMinutes = 0;
+                }
             }
             catch (Exception ex_safe_log)
             {
@@ -168,7 +182,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 null);
         }
 
-        private async Task LoadJobListFromApiAsync(JobListWindow? windowToUpdate)
+        private async Task LoadJobListFromApiAsync()
         {
             try
             {
@@ -261,14 +275,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                         LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
                     }
 
-                    try
-                    {
-                        windowToUpdate?.ReplaceRows(_jobListRows);
-                    }
-                    catch (Exception ex_safe_log)
-                    {
-                        LogSuppressedError("ExplorerV2View.Jobs", ex_safe_log);
-                    }
+
 
                     // Also refresh the inline Job List panel if open
                     try
@@ -303,7 +310,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 {
                     try
                     {
-                        _ = LoadJobListFromApiAsync(null);
+                        _ = LoadJobListFromApiAsync();
                     }
                     catch (Exception ex_safe_log)
                     {

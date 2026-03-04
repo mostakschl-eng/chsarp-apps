@@ -14,6 +14,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
         private readonly DispatcherTimer _idleTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         private IdleWarningWindow? _idleWarning;
         private bool _isIdleAutoPaused;
+        private bool _isIdleDialogShowing;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct LASTINPUTINFO
@@ -90,6 +91,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
 
             _isIdleAutoPaused = false;
+            _isIdleDialogShowing = false;
         }
 
         private void IdleTimer_Tick(object? sender, EventArgs e)
@@ -183,6 +185,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 }
 
                 _idleWarning = null;
+                _isIdleDialogShowing = false;
             }
             catch (Exception ex_safe_log)
             {
@@ -194,6 +197,9 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
+                if (_isIdleDialogShowing) return;
+                _isIdleDialogShowing = true;
+
                 // Ensure pause reason is captured in sync payload
                 _vm.SelectedBreakReason = AutoPauseReason;
 
@@ -241,8 +247,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 try
                 {
-                    var bg = TryFindResource("WarningBrush") as System.Windows.Media.Brush;
-                    var fg = TryFindResource("TextWhiteBrush") as System.Windows.Media.Brush;
+                    var bg = _cachedWarningBrush;
+                    var fg = _cachedTextWhiteBrush;
                     if (bg != null) StartButton.Background = bg;
                     if (fg != null) StartButton.Foreground = fg;
                 }

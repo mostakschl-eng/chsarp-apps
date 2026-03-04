@@ -37,30 +37,21 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     return;
                 }
 
+                if (_vm.IsStarted)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Finish current files before adding new ones.",
+                        "SCHL App",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                    return;
+                }
+
                 var workType = (WorkTypeButton?.Content as string) ?? string.Empty;
                 var tasks = GetCheckedTasksForDrop();
                 if (!EnsureWorkTypeAndTasksSelectedForDrop(workType, tasks))
                 {
                     return;
-                }
-
-                try
-                {
-                    if (_vm.SelectedFilePaths.Count > 0
-                        && _vm.HasSelectionMetaLock
-                        && !_vm.IsSelectionMetaMatch(_vm.ActiveJobClientCode, workType, tasks))
-                    {
-                        System.Windows.MessageBox.Show(
-                            "Selected files already have Work Type/Task. Clear selection to add different Work Type/Task files.",
-                            "SCHL App",
-                            System.Windows.MessageBoxButton.OK,
-                            System.Windows.MessageBoxImage.Information);
-                        return;
-                    }
-                }
-                catch (Exception ex_safe_log)
-                {
-                    LogSuppressedError("ExplorerV2View.DragDrop", ex_safe_log);
                 }
 
                 if (e.Data.GetData(System.Windows.DataFormats.FileDrop) is not string[] paths || paths.Length == 0)
@@ -151,25 +142,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     LogSuppressedError("ExplorerV2View.DragDrop", ex_safe_log);
                 }
 
-                if (added)
-                {
-                    if (_vm.IsStarted)
-                    {
-                        _vm.EnableActions();
-
-                        try
-                        {
-                            if (!_vm.IsPaused && newlyAdded.Count > 0)
-                            {
-                                TrackerQueueWorking(newlyAdded);
-                            }
-                        }
-                        catch (Exception ex_safe_log)
-                        {
-                            LogSuppressedError("ExplorerV2View.DragDrop", ex_safe_log);
-                        }
-                    }
-                }
+                // No need to handle IsStarted here — drops are blocked while started.
 
                 try
                 {

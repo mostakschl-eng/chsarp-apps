@@ -16,8 +16,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
-                var primary = TryFindResource("PrimaryBrush") as System.Windows.Media.Brush;
-                var normal = TryFindResource("TextMainBrush") as System.Windows.Media.Brush;
+                var primary = _cachedPrimaryBrush;
+                var normal = _cachedTextMainBrush;
 
                 foreach (var mi in TaskMenu.Items.OfType<MenuItem>())
                 {
