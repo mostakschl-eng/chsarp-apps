@@ -96,3 +96,59 @@ Total Shift Time (Total Duration Today): The exact span between their First Logi
 Idle Time: The master calculation: Total Shift Time $-$ (Total Work Time $+$ Total Pause Time). If they have the app open but are not touching a file and not officially paused, it counts as Idle.
 6. Real-Time Math ("Effective Time")
 Across all tabs, time isn't just a static DB number. Because the dashboard is "Live", it uses a property called EffectiveTimeSpent. If a Backend file is marked "working", the C# app uses your PC clock to do this: EffectiveTimeSpent = Math.Max(Database Time Spent, (Current UI Time - Backend started_at timestamp)) This guarantees the stopwatch on the live dashboard keeps ticking up smoothly every second without spamming the backend database.
+
+
+
+
+{
+  "_id": {
+    "$oid": "69aa905f7dbedef6b3c8a684"
+  },
+  "shift": "morning",
+  "work_type": "production",
+  "client_code": "0073_dd",
+  "folder_path": "P:\\SCHL Production\\0073_DD\\MARCH 2026\\05 Mar 26\\Retouching_20260305-CAT_3pics",
+  "employee_name": "0026 - robiul islam",
+  "date_today": "2026-03-06",
+  "__v": 0,
+  "categories": "Retouch",
+  "createdAt": {
+    "$date": "2026-03-06T08:29:19.525Z"
+  },
+  "estimate_time": 10,
+  "files": [
+    {
+      "file_name": "S00291_AP_GP09_77605OK.OO.A517CA.01_ET1",
+      "file_status": "working",
+      "report": "",
+      "time_spent": 65,
+      "started_at": {
+        "$date": "2026-03-06T08:29:19.552Z"
+      }
+    }
+  ],
+  "pause_count": 1,
+  "pause_reasons": [
+    {
+      "reason": "auto pause",
+      "duration": 1,
+      "started_at": {
+        "$date": "2026-03-06T08:30:25.257Z"
+      },
+      "completed_at": {
+        "$date": "2026-03-06T08:30:25.874Z"
+      }
+    }
+  ],
+  "pause_time": 1,
+  "processed_sync_ids": [
+    "23d8c30447e848a1ad2b5f8df0fb744d",
+    "7b958df57cf1428388603fae50fb1c6c",
+    "978357fe83464d57b6e0457d44ef6006",
+    "6efa1df9b1d94cc79f9336e00ff34ea7"
+  ],
+  "total_times": 65,
+  "updatedAt": {
+    "$date": "2026-03-06T08:30:25.891Z"
+  }
+}
