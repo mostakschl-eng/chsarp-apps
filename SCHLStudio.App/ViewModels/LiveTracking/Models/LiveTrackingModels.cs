@@ -410,7 +410,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Models
 
                 if (endUtc < startUtc) return TotalTimes;
 
-                var elapsedMinutes = (endUtc - startUtc).TotalMinutes;
+                var elapsedMinutes = (endUtc - startUtc).TotalMinutes - PauseTime;
                 return elapsedMinutes > 0 ? Math.Max(elapsedMinutes, TotalTimes) : TotalTimes;
             }
         }
