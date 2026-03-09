@@ -226,6 +226,27 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                         continue;
                     }
 
+                    var displayFolderName = dirName;
+                    if (isDoneView && (isThisDoneRoot || inDone))
+                    {
+                        try
+                        {
+                            var trimmed = dirPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                            var parentPath = Path.GetDirectoryName(trimmed);
+                            if (!string.IsNullOrWhiteSpace(parentPath))
+                            {
+                                var parentName = Path.GetFileName(parentPath);
+                                if (!string.IsNullOrWhiteSpace(parentName))
+                                {
+                                    displayFolderName = parentName;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     try
                     {
                         foreach (var p in Directory.EnumerateFiles(dirPath, "*.*", SearchOption.TopDirectoryOnly))
@@ -244,7 +265,7 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                                 FullPath = p,
                                 Extension = extNorm.TrimStart('.').ToUpperInvariant(),
                                 ExtensionLower = extNorm,
-                                FolderName = dirName,
+                                FolderName = displayFolderName,
                                 IsHeader = false
                             });
                         }
