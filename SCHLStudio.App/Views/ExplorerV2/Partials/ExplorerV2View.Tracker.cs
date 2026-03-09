@@ -210,41 +210,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
-        /// <summary>
-        /// Queue "paused" status for each selected file (on Break/Pause).
-        /// </summary>
-        private void TrackerQueuePaused(IReadOnlyList<string> filePaths)
-        {
-            try
-            {
-                if (_trackerSync is null) return;
 
-                // Always prefer the active snapshot (what the user actually started/resumed with).
-                // Merge current selection too, so newly-selected files are also updated.
-                var merged = new List<string>();
-                if (_activeTrackerFilePathsSnapshot.Count > 0)
-                {
-                    merged.AddRange(_activeTrackerFilePathsSnapshot);
-                }
-                if (filePaths != null && filePaths.Count > 0)
-                {
-                    merged.AddRange(filePaths);
-                }
-
-                var distinct = merged
-                    .Select(x => (x ?? string.Empty).Trim())
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                if (distinct.Count == 0) return;
-                TrackerQueueQcStatus(distinct, "pause");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[ExplorerV2.Tracker] TrackerQueuePaused error: {ex.Message}");
-            }
-        }
 
         /// <summary>
         /// Queue "working" status for each selected file (on Resume after pause).
@@ -291,9 +257,14 @@ namespace SCHLStudio.App.Views.ExplorerV2
             try
             {
                 if (_trackerSync is null || filePaths.Count == 0) return;
+                QueueWorkDeltaAcrossActiveFiles(
+                    totalElapsedSeconds: totalElapsedSeconds,
+                    filesToExclude: null,
+                    activeSnapshotFilePaths: activeSnapshotFilePaths,
+                    forceEvenIfPaused: true,
+                    overrideStatus: "done",
+                    alwaysSend: true);
 
-                QueueWorkDeltaAcrossActiveFiles(totalElapsedSeconds, filesToExclude: null, activeSnapshotFilePaths: activeSnapshotFilePaths);
-                QueueStatusOnlyUpdate(filePaths, fileStatus: "done", perFileTime: 0);
                 MarkFilesInactive(filePaths);
             }
             catch (Exception ex)
@@ -331,14 +302,31 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 if (string.Equals(fileStatus, "skip", StringComparison.OrdinalIgnoreCase))
                 {
+                    // Update non-skipped files with time (keep them as working)
                     QueueWorkDeltaAcrossActiveFiles(totalElapsedSeconds, filesToExclude: filePaths, activeSnapshotFilePaths: activeSnapshotFilePaths);
-                    QueueStatusOnlyUpdate(filePaths, fileStatus: fileStatus, perFileTime: 0);
+                    
+                    // Update ONLY the skipped files with NO time, but with the skipped status
+                    QueueWorkDeltaAcrossActiveFiles(
+                        totalElapsedSeconds: _lastSentWorkSeconds, // no extra time for skipped files
+                        filesToExclude: null,
+                        activeSnapshotFilePaths: filePaths,
+                        forceEvenIfPaused: true,
+                        overrideStatus: fileStatus,
+                        alwaysSend: true);
+
                     MarkFilesInactive(filePaths);
                     return;
                 }
 
-                QueueWorkDeltaAcrossActiveFiles(totalElapsedSeconds, filesToExclude: null, activeSnapshotFilePaths: activeSnapshotFilePaths);
-                QueueStatusOnlyUpdate(filePaths, fileStatus: fileStatus, perFileTime: 0);
+                // For WalkOut
+                QueueWorkDeltaAcrossActiveFiles(
+                    totalElapsedSeconds: totalElapsedSeconds,
+                    filesToExclude: null,
+                    activeSnapshotFilePaths: activeSnapshotFilePaths, // use active selection to give them time
+                    forceEvenIfPaused: true,
+                    overrideStatus: fileStatus,
+                    alwaysSend: true);
+
                 MarkFilesInactive(filePaths);
             }
             catch (Exception ex)
@@ -572,7 +560,9 @@ namespace SCHLStudio.App.Views.ExplorerV2
             int totalElapsedSeconds,
             IReadOnlyList<string>? filesToExclude,
             IReadOnlyList<string>? activeSnapshotFilePaths = null,
-            bool forceEvenIfPaused = false)
+            bool forceEvenIfPaused = false,
+            string? overrideStatus = null,
+            bool alwaysSend = false)
         {
             try
             {
@@ -587,7 +577,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 }
 
                 var delta = Math.Max(0, totalElapsedSeconds - _lastSentWorkSeconds);
-                if (delta <= 0)
+                if (delta <= 0 && !alwaysSend)
                 {
                     return;
                 }
@@ -630,7 +620,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                         EstimateTime = GetEffectiveETForTracker(),
                         Categories = GetEffectiveCategoriesForTracker(),
                         TotalTimes = delta,
-                        FileStatus = "working",
+                        FileStatus = overrideStatus ?? "working",
                         PauseCount = _workSession.PauseCount,
                         PauseTime = (int)_workSession.TotalPauseTimeSeconds,
                         PauseReasons = BuildPauseReasons(),
@@ -658,50 +648,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
-        private void QueueStatusOnlyUpdate(IReadOnlyList<string> filePaths, string fileStatus, int perFileTime)
-        {
-            try
-            {
-                if (_trackerSync is null || filePaths.Count == 0)
-                {
-                    return;
-                }
 
-                var workType = GetEffectiveWorkTypeForTracker();
-
-                var validFiles = filePaths
-                    .Select(fp => (fp ?? string.Empty).Trim())
-                    .Where(p => !string.IsNullOrWhiteSpace(p))
-                    .ToArray();
-
-                if (validFiles.Length == 0)
-                {
-                    return;
-                }
-
-                var dto = TrackerDtoFactory.CreateQcDoneDto(
-                    employeeName: Configuration.AppConfig.CurrentDisplayName,
-                    workType: workType,
-                    shift: ShiftDetector.GetCurrentShift(),
-                    clientCode: GetEffectiveClientCodeForTracker(),
-                    folderPath: GetActiveJobFolderPath(),
-                    estimateTime: GetEffectiveETForTracker(),
-                    categories: GetEffectiveCategoriesForTracker(),
-                    totalTimes: 0,
-                    pauseCount: _workSession.PauseCount,
-                    pauseTime: (int)_workSession.TotalPauseTimeSeconds,
-                    pauseReasons: BuildPauseReasons(),
-                    filePaths: validFiles,
-                    perFileTime: perFileTime,
-                    fileStatus: fileStatus);
-
-                _trackerSync.QueueQcWorkLog(dto);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"QueueStatusOnlyUpdate error: {ex.Message}");
-            }
-        }
 
         private void MarkFilesInactive(IReadOnlyList<string> filePaths)
         {

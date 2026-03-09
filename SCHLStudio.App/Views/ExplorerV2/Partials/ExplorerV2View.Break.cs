@@ -179,8 +179,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                     TrackerStartSession();
                     TrackerBeginPause();
-                    TrackerQueuePaused(GetTrackerTargetFullPaths());
-
+                    
                     ApplyPausedUiState();
 
                     return;
@@ -197,24 +196,24 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 PauseWorkTimer();
 
+                TrackerBeginPause();
+
                 try
                 {
-                    // Flush the last active work delta immediately on pause.
-                    // Heartbeat only sends once per minute, so without this the backend can lag.
+                    // Flush the active work delta and apply pause status in ONE request.
                     var elapsed = GetWorkTimerElapsedSeconds();
                     QueueWorkDeltaAcrossActiveFiles(
                         totalElapsedSeconds: elapsed,
                         filesToExclude: null,
-                        activeSnapshotFilePaths: null,
-                        forceEvenIfPaused: true);
+                        activeSnapshotFilePaths: null, // this will use all currently active files
+                        forceEvenIfPaused: true,
+                        overrideStatus: "pause",
+                        alwaysSend: true);
                 }
                 catch (Exception ex_safe_log)
                 {
                     LogSuppressedError("ExplorerV2View.Break.FlushDeltaOnPause", ex_safe_log);
                 }
-
-                TrackerBeginPause();
-                TrackerQueuePaused(GetTrackerTargetFullPaths());
             }
             catch (Exception ex)
             {

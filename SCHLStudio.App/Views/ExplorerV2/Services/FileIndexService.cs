@@ -227,24 +227,49 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                     }
 
                     var displayFolderName = dirName;
-                    if (isDoneView && (isThisDoneRoot || inDone))
+
+                    try
                     {
-                        try
+                        var trimmedDir = dirPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                        var relPathStr = Path.GetRelativePath(baseDir, trimmedDir);
+                        
+                        if (!string.IsNullOrWhiteSpace(relPathStr) && relPathStr != ".")
                         {
-                            var trimmed = dirPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                            var parentPath = Path.GetDirectoryName(trimmed);
-                            if (!string.IsNullOrWhiteSpace(parentPath))
+                            var parts = relPathStr.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+                            
+                            if (isDoneView && (isThisDoneRoot || inDone))
                             {
-                                var parentName = Path.GetFileName(parentPath);
-                                if (!string.IsNullOrWhiteSpace(parentName))
+                                // For done files, the last part is usually "Production Done", so we want the parent of that.
+                                if (parts.Length > 1)
                                 {
-                                    displayFolderName = parentName;
+                                    var parentName = parts[parts.Length - 2];
+                                    if (parts.Length > 2)
+                                    {
+                                        displayFolderName = $"{parts[0]} \u2022 {parentName}";
+                                    }
+                                    else
+                                    {
+                                        displayFolderName = parentName;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // Normal work files
+                                if (parts.Length > 1)
+                                {
+                                    displayFolderName = $"{parts[0]} \u2022 {parts[parts.Length - 1]}";
+                                }
+                                else if (parts.Length == 1)
+                                {
+                                    displayFolderName = parts[0];
                                 }
                             }
                         }
-                        catch
-                        {
-                        }
+                    }
+                    catch
+                    {
+                        // Fallback to exactly dirName
                     }
 
                     try

@@ -22,7 +22,6 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
             Action resetIdleAutoPauseAndHideWarning,
             Action pauseWorkTimer,
             Action trackerBeginPause,
-            Action<IReadOnlyList<string>> trackerQueuePaused,
             Action trackerEndPause,
             Action<IReadOnlyList<string>> trackerQueueResumed,
             Action resumeWorkTimer,

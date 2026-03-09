@@ -46,7 +46,6 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 },
                 pauseWorkTimer: PauseWorkTimer,
                 trackerBeginPause: TrackerBeginPause,
-                trackerQueuePaused: TrackerQueuePaused,
                 trackerEndPause: TrackerEndPause,
                 trackerQueueResumed: TrackerQueueResumed,
                 resumeWorkTimer: ResumeWorkTimer,
