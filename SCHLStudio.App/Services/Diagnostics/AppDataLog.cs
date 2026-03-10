@@ -63,8 +63,17 @@ namespace SCHLStudio.App.Services.Diagnostics
 
         private static string ResolveRoot(string? userName)
         {
-            var fallbackUser = Configuration.AppConfig.CurrentAppUser;
+            var fallbackUser = Configuration.AppConfig.StorageUserSegment;
             var resolved = string.IsNullOrWhiteSpace(userName) ? fallbackUser : userName;
+
+            // Keep diagnostics folder naming aligned with the storage segment used by app data/tracker.
+            var currentAppUser = (Configuration.AppConfig.CurrentAppUser ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(currentAppUser)
+                && string.Equals((resolved ?? string.Empty).Trim(), currentAppUser, StringComparison.OrdinalIgnoreCase))
+            {
+                resolved = fallbackUser;
+            }
+
             if (string.Equals(resolved?.Trim(), "UnknownUser", StringComparison.OrdinalIgnoreCase))
             {
                 resolved = "_global";
@@ -82,7 +91,13 @@ namespace SCHLStudio.App.Services.Diagnostics
             }
 
             var date = DateTime.Now.ToString("yyyy-MM-dd");
-            var root = Path.Combine(Configuration.AppConfig.NETWORK_ROOT, user, date, "logs");
+            // Keep logs local under the same user/date tree used by local tracker queue.
+            var root = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SCHLStudio",
+                user,
+                date,
+                "logs");
             Directory.CreateDirectory(root);
             return root;
         }

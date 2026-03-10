@@ -1,5 +1,4 @@
 using System.Windows;
-using System.IO;
 using SCHLStudio.App.Configuration;
 using SCHLStudio.App.Services.Diagnostics;
 using SCHLStudio.App.ViewModels.Windows;
@@ -41,7 +40,6 @@ namespace SCHLStudio.App.Views.Login
                 AppConfig.SetCurrentAppUser(username);
                 AppConfig.SetCurrentAppRole(role);
                 AppConfig.SetCurrentTrackerSession(_viewModel.SessionId, _viewModel.UserId);
-                Directory.CreateDirectory(AppConfig.LOGS_ROOT_DIR);
             }
             catch
             {

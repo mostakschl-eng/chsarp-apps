@@ -88,7 +88,7 @@ namespace SCHLStudio.App.Configuration
 
         // ==================== FILE PATHS ====================
 
-        public const string NETWORK_ROOT = @"P:\apps cache data";
+        public const string NETWORK_ROOT = @"P:\SCHL document\apps cache data";
 
         public static readonly string NETWORK_SETTINGS_DIR = Path.Combine(
             NETWORK_ROOT,
@@ -126,7 +126,7 @@ namespace SCHLStudio.App.Configuration
             }
         }
 
-        private static string StorageUserSegment
+        public static string StorageUserSegment
         {
             get
             {
@@ -327,8 +327,6 @@ namespace SCHLStudio.App.Configuration
         public static string GLOBAL_DATA_DIR => Path.Combine(GLOBAL_DIR, "data");
 
         public static string QUEUE_DIR => Path.Combine(DAILY_ROOT_DIR, "queue");
-
-        public static string LOGS_ROOT_DIR => Path.Combine(DAILY_ROOT_DIR, "logs");
 
         /// <summary>
         /// Data directory for queue and cache files.

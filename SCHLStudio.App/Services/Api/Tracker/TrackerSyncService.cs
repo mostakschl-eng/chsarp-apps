@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using SCHLStudio.App.Configuration;
 using SCHLStudio.App.Services.Diagnostics;
 
 namespace SCHLStudio.App.Services.Api.Tracker
@@ -18,12 +19,7 @@ namespace SCHLStudio.App.Services.Api.Tracker
 
         public TrackerSyncService(HttpClient httpClient, string apiBaseUrl, Func<bool> isAuthenticated, string? userName)
         {
-            var user = (userName ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(user)) user = "_global";
-            foreach (var c in Path.GetInvalidFileNameChars())
-            {
-                user = user.Replace(c, '_');
-            }
+            var user = ResolveStorageUserSegment(userName);
 
             var date = DateTime.Now.ToString("yyyy-MM-dd");
             var queueDir = ResolveQueueDir(user, date);
@@ -33,6 +29,35 @@ namespace SCHLStudio.App.Services.Api.Tracker
             _queue.SanitizeLingeringWorkingFiles();
 
             _worker = new TrackerSyncWorker(_queue, httpClient, apiBaseUrl, isAuthenticated);
+        }
+
+        private static string ResolveStorageUserSegment(string? userName)
+        {
+            try
+            {
+                // Keep local queue user folder consistent with network storage segment (code+name when available).
+                var user = (AppConfig.StorageUserSegment ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(user) || string.Equals(user, "UnknownUser", StringComparison.OrdinalIgnoreCase))
+                {
+                    user = (userName ?? string.Empty).Trim();
+                }
+
+                if (string.IsNullOrWhiteSpace(user))
+                {
+                    user = "_global";
+                }
+
+                foreach (var c in Path.GetInvalidFileNameChars())
+                {
+                    user = user.Replace(c, '_');
+                }
+
+                return string.IsNullOrWhiteSpace(user) ? "_global" : user;
+            }
+            catch
+            {
+                return "_global";
+            }
         }
 
         private static string ResolveQueueDir(string user, string date)

@@ -55,7 +55,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 var userName = (userNameOverride ?? string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(userName))
                 {
-                    userName = Configuration.AppConfig.CurrentDisplayName ?? GetAppCurrentUser();
+                    userName = Configuration.AppConfig.StorageUserSegment;
                 }
 
                 _trackerSync = apiClient.EnsureTrackerSync(userName);

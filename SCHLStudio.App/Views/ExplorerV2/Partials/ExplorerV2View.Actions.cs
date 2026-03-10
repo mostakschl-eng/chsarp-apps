@@ -250,16 +250,6 @@ namespace SCHLStudio.App.Views.ExplorerV2
             return GetSelectedFullPaths();
         }
 
-
-        private async Task MoveSelectedToDoneAndRefreshAsync(string baseDir, Action<IEnumerable<string>> moveAction)
-        {
-            await _workflowService.MoveSelectedToDoneAndRefreshAsync(
-                baseDir,
-                GetSelectedFullPaths,
-                RefreshFileTilesForCurrentContext,
-                moveAction);
-        }
-
         private async Task ExecuteFinishWorkflowFromVmAsync()
         {
             try
@@ -276,8 +266,13 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 }
 
                 var selected = GetSelectedFullPaths();
+                var finishSnapshot = selected
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
                 if (_workflowService.HandleEmptyFinishSelection(
-                    selectedCount: selected.Count,
+                    selectedCount: finishSnapshot.Count,
                     resetWorkflow: () => { },
                     clearSelection: _vm.ClearSelection,
                     updateSelectedFilesMetaText: UpdateSelectedFilesMetaText,
@@ -320,10 +315,10 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     }
 
                     var baseDir = GetActiveJobFolderPath();
-
-                    await MoveSelectedToDoneAndRefreshAsync(
+                    await MoveSelectedToDoneWithSingleRetryAsync(
                         baseDir,
-                        filePaths => _doneMoveService.MoveToDone(filePaths, effectiveWorkType));
+                        effectiveWorkType,
+                        finishSnapshot);
                 }
                 catch (Exception qcEx)
                 {
@@ -351,6 +346,64 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     LogSuppressedError("ExecuteFinishWorkflowFromVmAsync_Finally", finEx);
                 }
             }
+        }
+
+        private async Task MoveSelectedToDoneWithSingleRetryAsync(
+            string baseDir,
+            string? effectiveWorkType,
+            IReadOnlyList<string> snapshot)
+        {
+            var targets = (snapshot ?? Array.Empty<string>())
+                .Select(x => (x ?? string.Empty).Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            // Keep sequential move behavior; retry only remaining files once.
+            await Task.Run(() => _doneMoveService.MoveToDone(targets, effectiveWorkType));
+
+            var remaining = GetExistingPaths(targets);
+            if (remaining.Count > 0)
+            {
+                await Task.Run(() => _doneMoveService.MoveToDone(remaining, effectiveWorkType));
+            }
+
+            try
+            {
+                RefreshFileTilesForCurrentContext(baseDir);
+            }
+            catch (Exception ex)
+            {
+                LogSuppressedError("MoveSelectedToDoneWithSingleRetryAsync.RefreshFileTiles", ex);
+            }
+        }
+
+        private static List<string> GetExistingPaths(IEnumerable<string> filePaths)
+        {
+            var existing = new List<string>();
+            foreach (var raw in filePaths ?? Array.Empty<string>())
+            {
+                try
+                {
+                    var path = (raw ?? string.Empty).Trim();
+                    if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    {
+                        existing.Add(path);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return existing
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
     }

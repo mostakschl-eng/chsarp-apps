@@ -169,7 +169,7 @@ namespace SCHLStudio.App.ViewModels.Windows
         private void UpdateGreeting()
         {
             var hour = DateTime.Now.Hour;
-            Greeting = (hour >= 7 && hour < 15) ? "good morning" : "good evening";
+            Greeting = (hour >= 7 && hour < 15) ? "Good Morning" : "Good Evening";
         }
 
         private async Task CheckUsernameAsync()

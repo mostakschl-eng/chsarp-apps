@@ -142,6 +142,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                             if (paths.Length > 0)
                             {
                                 var data = new System.Windows.DataObject();
+                                data.SetData("SCHLStudio_InternalDrag", true);
                                 data.SetData(System.Windows.DataFormats.FileDrop, paths);
                                 System.Windows.DragDrop.DoDragDrop(FilesListView, data, System.Windows.DragDropEffects.Copy);
                                 return;

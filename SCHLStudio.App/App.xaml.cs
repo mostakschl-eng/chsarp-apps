@@ -725,9 +725,87 @@ namespace SCHLStudio.App
 
             try
             {
+                // LOCAL_APP_DATA_DIR already points at one user root: ...\apps cache data\<user>
                 CleanupOldDailyFolders(AppConfig.LOCAL_APP_DATA_DIR);
             }
             catch { }
+
+            try
+            {
+                // Legacy/current tracker queue layout in LocalAppData: ...\SCHLStudio\<user>\<yyyy-MM-dd>\queue
+                var localTrackerRoot = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "SCHLStudio");
+                CleanupUserQueues(localTrackerRoot);
+            }
+            catch { }
+        }
+
+        private static void CleanupUserQueues(string localRoot)
+        {
+            if (string.IsNullOrWhiteSpace(localRoot) || !Directory.Exists(localRoot))
+                return;
+
+            var cutoffDate = DateTime.Now.Date.AddDays(-2);
+
+            var userDirs = Directory.GetDirectories(localRoot);
+            foreach (var userDir in userDirs)
+            {
+                try
+                {
+                    var dailyDirs = Directory.GetDirectories(userDir);
+                    foreach (var dailyDir in dailyDirs)
+                    {
+                        var dirName = Path.GetFileName(dailyDir);
+                        if (DateTime.TryParseExact(dirName, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dirDate))
+                        {
+                            if (dirDate.Date < cutoffDate)
+                            {
+                                try
+                                {
+                                    Directory.Delete(dailyDir, true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    try
+                                    {
+                                        AppDataLog.LogError(
+                                            area: "App",
+                                            operation: "CleanupUserQueues.DeleteDailyFolder",
+                                            ex: ex,
+                                            data: new System.Collections.Generic.Dictionary<string, string?>
+                                            {
+                                                ["dir"] = dailyDir
+                                            });
+                                    }
+                                    catch { }
+                                }
+                            }
+                        }
+                    }
+
+                    // If the user directory is now completely empty, clean it up too
+                    if (!Directory.EnumerateFileSystemEntries(userDir).Any())
+                    {
+                        Directory.Delete(userDir, false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    try
+                    {
+                        AppDataLog.LogError(
+                            area: "App",
+                            operation: "CleanupUserQueues",
+                            ex: ex,
+                            data: new System.Collections.Generic.Dictionary<string, string?>
+                            {
+                                ["userDir"] = userDir
+                            });
+                    }
+                    catch { }
+                }
+            }
         }
 
         private static void CleanupOldDailyFolders(string rootDir)

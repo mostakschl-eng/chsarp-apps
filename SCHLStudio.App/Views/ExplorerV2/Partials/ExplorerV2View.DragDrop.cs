@@ -17,7 +17,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
-                e.Effects = e.Data?.GetDataPresent(System.Windows.DataFormats.FileDrop) == true
+                var isInternalDrag = e.Data?.GetDataPresent("SCHLStudio_InternalDrag") == true;
+                e.Effects = isInternalDrag && e.Data?.GetDataPresent(System.Windows.DataFormats.FileDrop) == true
                     ? System.Windows.DragDropEffects.Copy
                     : System.Windows.DragDropEffects.None;
                 e.Handled = true;
@@ -34,6 +35,16 @@ namespace SCHLStudio.App.Views.ExplorerV2
             {
                 if (e.Data?.GetDataPresent(System.Windows.DataFormats.FileDrop) != true)
                 {
+                    return;
+                }
+
+                if (e.Data?.GetDataPresent("SCHLStudio_InternalDrag") != true)
+                {
+                    System.Windows.MessageBox.Show(
+                        "You can only drag files from the left file grid.",
+                        "SCHL App",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
                     return;
                 }
 
