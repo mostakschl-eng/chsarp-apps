@@ -15,6 +15,13 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
+                if (!_vm.IsStarted)
+                {
+                    _vm.ClearSelection();
+                    UpdateSelectedFilesMetaText();
+                    return;
+                }
+
                 if (_isSkipRunning)
                 {
                     return;

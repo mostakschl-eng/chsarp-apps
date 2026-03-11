@@ -274,11 +274,11 @@ namespace SCHLStudio.App.Views.ExplorerV2
         }
 
         /// <summary>
-        /// Queue "walk_out" status for selected files.
+        /// Queue "walkout" status for selected files.
         /// </summary>
         private void TrackerQueueWalkOut(IReadOnlyList<string> filePaths, int totalElapsedSeconds, IReadOnlyList<string>? activeSnapshotFilePaths = null)
         {
-            TrackerQueueQcBatchStatus(filePaths, totalElapsedSeconds, "walk_out", "TrackerQueueWalkOut", activeSnapshotFilePaths);
+            TrackerQueueQcBatchStatus(filePaths, totalElapsedSeconds, "walkout", "TrackerQueueWalkOut", activeSnapshotFilePaths);
         }
 
         /// <summary>
@@ -583,7 +583,12 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 }
 
                 var activeSource = activeSnapshotFilePaths ?? GetTrackerTargetFullPaths();
-                var active = FilterActiveFilePaths(activeSource);
+                // "done" always wins — bypass the inactive-file filter.
+                // A file the employee re-selected after skipping must still be marked done.
+                var isDone = string.Equals(overrideStatus, "done", StringComparison.OrdinalIgnoreCase);
+                var active = isDone
+                    ? FilterValidFilePaths(activeSource)
+                    : FilterActiveFilePaths(activeSource);
                 if (filesToExclude is not null && filesToExclude.Count > 0)
                 {
                     var excludeNames = new HashSet<string>(filesToExclude.Select(NormalizeFileNameForTracker), StringComparer.OrdinalIgnoreCase);
@@ -681,6 +686,28 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 }
 
                 if (_inactiveTrackerFiles.Contains(n))
+                {
+                    continue;
+                }
+
+                list.Add(fp);
+            }
+
+            return list;
+        }
+
+        /// <summary>
+        /// Same as <see cref="FilterActiveFilePaths"/> but does NOT exclude files that are
+        /// in <c>_inactiveTrackerFiles</c>. Used exclusively for "done" payloads where
+        /// Finish always wins — even if the file was skipped earlier in the same session.
+        /// </summary>
+        private List<string> FilterValidFilePaths(IReadOnlyList<string> allFilePaths)
+        {
+            var list = new List<string>();
+            foreach (var fp in allFilePaths)
+            {
+                var n = NormalizeFileNameForTracker(fp);
+                if (string.IsNullOrWhiteSpace(n))
                 {
                     continue;
                 }

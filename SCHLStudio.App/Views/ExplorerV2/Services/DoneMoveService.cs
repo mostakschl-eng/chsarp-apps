@@ -147,27 +147,6 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
             try
             {
                 var names = FileOperationHelper.GetExplorerV2WorkFolderNamesOrDefault();
-
-                var userSafe = string.Empty;
-                try
-                {
-                    userSafe = FileOperationHelper.EnsureDirectorySafe((currentUser ?? string.Empty).Trim());
-                }
-                catch
-                {
-                    userSafe = string.Empty;
-                }
-
-                var userRealSafe = string.Empty;
-                try
-                {
-                    userRealSafe = ExplorerV2DragDropService.GetSafeRealNameForDrop(currentUser);
-                }
-                catch
-                {
-                    userRealSafe = string.Empty;
-                }
-
                 var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     (names.Production ?? string.Empty).Trim(),
@@ -176,20 +155,6 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                     (names.SharedProduction ?? string.Empty).Trim(),
                     (names.TranningProduction ?? string.Empty).Trim(),
                 };
-
-                if (!string.IsNullOrWhiteSpace(userSafe))
-                {
-                    folders.Add(((names.Qc1Prefix ?? string.Empty).Trim() + " " + userSafe).Trim());
-                    folders.Add(((names.Qc2Prefix ?? string.Empty).Trim() + " " + userSafe).Trim());
-                    folders.Add(((names.QcAcPrefix ?? string.Empty).Trim() + " " + userSafe).Trim());
-                }
-
-                if (!string.IsNullOrWhiteSpace(userRealSafe) && !string.Equals(userRealSafe, userSafe, StringComparison.OrdinalIgnoreCase))
-                {
-                    folders.Add(((names.Qc1Prefix ?? string.Empty).Trim() + " " + userRealSafe).Trim());
-                    folders.Add(((names.Qc2Prefix ?? string.Empty).Trim() + " " + userRealSafe).Trim());
-                    folders.Add(((names.QcAcPrefix ?? string.Empty).Trim() + " " + userRealSafe).Trim());
-                }
 
                 foreach (var srcRaw in filePaths ?? Array.Empty<string>())
                 {
@@ -217,7 +182,8 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                             srcFolderName = string.Empty;
                         }
 
-                        if (string.IsNullOrWhiteSpace(srcFolderName) || !folders.Contains(srcFolderName))
+                        if (string.IsNullOrWhiteSpace(srcFolderName)
+                            || !IsExplorerV2WorkFolder(srcFolderName, folders, names))
                         {
                             continue;
                         }
@@ -258,6 +224,57 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                 {
                     ["currentUser"] = currentUser
                 });
+            }
+        }
+
+        private static bool IsExplorerV2WorkFolder(
+            string folderName,
+            HashSet<string> fixedFolderNames,
+            FileOperationHelper.ExplorerV2WorkFolderNames names)
+        {
+            try
+            {
+                var candidate = (folderName ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(candidate))
+                {
+                    return false;
+                }
+
+                if (fixedFolderNames.Contains(candidate))
+                {
+                    return true;
+                }
+
+                return MatchesQcWorkFolder(candidate, names.Qc1Prefix)
+                    || MatchesQcWorkFolder(candidate, names.Qc2Prefix)
+                    || MatchesQcWorkFolder(candidate, names.QcAcPrefix);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool MatchesQcWorkFolder(string folderName, string? prefix)
+        {
+            try
+            {
+                var normalizedPrefix = (prefix ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(normalizedPrefix))
+                {
+                    return false;
+                }
+
+                if (string.Equals(folderName, normalizedPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                return folderName.StartsWith(normalizedPrefix + " ", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -383,7 +400,7 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                 : "QC2 Production Done";
 
             var doneDirName = fallbackDoneDirName;
-            var doneDirParent = srcDir;
+            var doneDirParent = Directory.GetParent(srcDir)?.FullName ?? srcDir;
 
             try
             {
@@ -490,7 +507,7 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                     ["qcPrefix"] = qcPrefix
                 });
                 doneDirName = fallbackDoneDirName;
-                doneDirParent = srcDir;
+                doneDirParent = Directory.GetParent(srcDir)?.FullName ?? srcDir;
             }
 
             return (doneDirName, doneDirParent);

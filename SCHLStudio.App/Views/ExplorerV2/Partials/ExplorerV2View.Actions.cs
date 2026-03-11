@@ -34,10 +34,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 enableActions: _vm.EnableActions,
                 applyRunningStyle: () =>
                 {
-                    var bg = TryFindResource("WarningBrush") as System.Windows.Media.Brush;
-                    var fg = TryFindResource("TextWhiteBrush") as System.Windows.Media.Brush;
-                    if (bg != null) StartButton.Background = bg;
-                    if (fg != null) StartButton.Foreground = fg;
+                    if (_cachedWarningBrush   != null) StartButton.Background = _cachedWarningBrush;
+                    if (_cachedTextWhiteBrush != null) StartButton.Foreground = _cachedTextWhiteBrush;
                 },
                 resetIdleAutoPauseAndHideWarning: () =>
                 {
@@ -53,17 +51,13 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 {
                     if (isPaused)
                     {
-                        var bg = TryFindResource("PrimaryBrush") as System.Windows.Media.Brush;
-                        var fg = TryFindResource("TextBlackBrush") as System.Windows.Media.Brush;
-                        if (bg != null) StartButton.Background = bg;
-                        if (fg != null) StartButton.Foreground = fg;
+                        if (_cachedPrimaryBrush   != null) StartButton.Background = _cachedPrimaryBrush;
+                        if (_cachedTextBlackBrush != null) StartButton.Foreground = _cachedTextBlackBrush;
                     }
                     else
                     {
-                        var bg = TryFindResource("WarningBrush") as System.Windows.Media.Brush;
-                        var fg = TryFindResource("TextWhiteBrush") as System.Windows.Media.Brush;
-                        if (bg != null) StartButton.Background = bg;
-                        if (fg != null) StartButton.Foreground = fg;
+                        if (_cachedWarningBrush   != null) StartButton.Background = _cachedWarningBrush;
+                        if (_cachedTextWhiteBrush != null) StartButton.Foreground = _cachedTextWhiteBrush;
                     }
                 },
                 setStartButtonText: v => _vm.StartButtonText = v,

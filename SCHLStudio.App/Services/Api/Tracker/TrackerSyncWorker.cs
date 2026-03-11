@@ -341,7 +341,6 @@ namespace SCHLStudio.App.Services.Api.Tracker
                         _queue.AppendHistory(new
                         {
                             ts = DateTimeOffset.Now.ToString("o"),
-                            url,
                             item = GetItemName(item),
                             outcome = "success",
                             status = (int)response.StatusCode,
@@ -366,7 +365,6 @@ namespace SCHLStudio.App.Services.Api.Tracker
                     _queue.AppendHistory(new
                     {
                         ts = DateTimeOffset.Now.ToString("o"),
-                        url,
                         item = GetItemName(item),
                         outcome = "http_error",
                         status = (int)response.StatusCode,
@@ -436,7 +434,6 @@ namespace SCHLStudio.App.Services.Api.Tracker
                     _queue.AppendHistory(new
                     {
                         ts = DateTimeOffset.Now.ToString("o"),
-                        url,
                         item = GetItemName(item),
                         outcome = "timeout",
                         payload = json
@@ -472,7 +469,6 @@ namespace SCHLStudio.App.Services.Api.Tracker
                     _queue.AppendHistory(new
                     {
                         ts = DateTimeOffset.Now.ToString("o"),
-                        url,
                         item = GetItemName(item),
                         outcome = "network_error",
                         error = ex.Message,

@@ -236,6 +236,11 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                         if (!string.IsNullOrWhiteSpace(relPathStr) && relPathStr != ".")
                         {
                             var parts = relPathStr.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+                            var groupedDoneMode = mode == FilesViewMode.ProductionDone
+                                || mode == FilesViewMode.Qc1AllDone
+                                || mode == FilesViewMode.Qc1Done
+                                || mode == FilesViewMode.Qc2AllDone
+                                || mode == FilesViewMode.Qc2Done;
                             
                             if (isDoneView && (isThisDoneRoot || inDone))
                             {
@@ -243,7 +248,18 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                                 if (parts.Length > 1)
                                 {
                                     var parentName = parts[parts.Length - 2];
-                                    if (parts.Length > 2)
+                                    if (groupedDoneMode)
+                                    {
+                                        if (parts.Length > 2)
+                                        {
+                                            displayFolderName = $"{parts[0]} • {parentName} • {dirName}";
+                                        }
+                                        else
+                                        {
+                                            displayFolderName = $"{parentName} • {dirName}";
+                                        }
+                                    }
+                                    else if (parts.Length > 2)
                                     {
                                         displayFolderName = $"{parts[0]} \u2022 {parentName}";
                                     }

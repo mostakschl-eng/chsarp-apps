@@ -19,10 +19,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 try
                 {
-                    var bg = TryFindResource("PrimaryBrush") as System.Windows.Media.Brush;
-                    var fg = TryFindResource("TextBlackBrush") as System.Windows.Media.Brush;
-                    if (bg != null) StartButton.Background = bg;
-                    if (fg != null) StartButton.Foreground = fg;
+                    if (_cachedPrimaryBrush   != null) StartButton.Background = _cachedPrimaryBrush;
+                    if (_cachedTextBlackBrush != null) StartButton.Foreground = _cachedTextBlackBrush;
                 }
                 catch (Exception ex_safe_log)
                 {
@@ -150,10 +148,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 try
                 {
-                    var bg = TryFindResource("WarningBrush") as System.Windows.Media.Brush;
-                    var fg = TryFindResource("TextWhiteBrush") as System.Windows.Media.Brush;
-                    if (bg != null) StartButton.Background = bg;
-                    if (fg != null) StartButton.Foreground = fg;
+                    if (_cachedWarningBrush   != null) StartButton.Background = _cachedWarningBrush;
+                    if (_cachedTextWhiteBrush != null) StartButton.Foreground = _cachedTextWhiteBrush;
                 }
                 catch (Exception ex_safe_log)
                 {
@@ -246,10 +242,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 try
                 {
-                    var bg = TryFindResource("PrimaryBrush") as System.Windows.Media.Brush;
-                    var fg = TryFindResource("TextBlackBrush") as System.Windows.Media.Brush;
-                    if (bg != null) StartButton.Background = bg;
-                    if (fg != null) StartButton.Foreground = fg;
+                    if (_cachedPrimaryBrush   != null) StartButton.Background = _cachedPrimaryBrush;
+                    if (_cachedTextBlackBrush != null) StartButton.Foreground = _cachedTextBlackBrush;
                 }
                 catch (Exception ex_safe_log)
                 {

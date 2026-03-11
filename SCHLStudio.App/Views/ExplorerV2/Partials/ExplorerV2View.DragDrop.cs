@@ -485,6 +485,15 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 LogSuppressedError("ExplorerV2View.DragDrop", ex_safe_log);
             }
 
+            try
+            {
+                _vm.SkipCommand.RaiseCanExecuteChanged();
+            }
+            catch (Exception ex_safe_log)
+            {
+                LogSuppressedError("ExplorerV2View.DragDrop", ex_safe_log);
+            }
+
             return added;
         }
     }

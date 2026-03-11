@@ -74,6 +74,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
         private System.Windows.Media.Brush? _cachedWarningBrush;
         private System.Windows.Media.Brush? _cachedTextMainBrush;
         private System.Windows.Media.Brush? _cachedTextWhiteBrush;
+        private System.Windows.Media.Brush? _cachedTextBlackBrush;
 
         // ── Cached active job ET (updated on job selection, avoids LINQ scan every tick) ──
         private int _cachedActiveJobEtMinutes;
@@ -199,9 +200,10 @@ namespace SCHLStudio.App.Views.ExplorerV2
             _cachedDividerBrush = TryFindResource("DividerBrush") as System.Windows.Media.Brush;
             _cachedPrimaryBrush = TryFindResource("PrimaryBrush") as System.Windows.Media.Brush;
             _cachedDangerBrush = TryFindResource("DangerBrush") as System.Windows.Media.Brush;
-            _cachedWarningBrush = TryFindResource("WarningBrush") as System.Windows.Media.Brush;
-            _cachedTextMainBrush = TryFindResource("TextMainBrush") as System.Windows.Media.Brush;
+            _cachedWarningBrush   = TryFindResource("WarningBrush")   as System.Windows.Media.Brush;
+            _cachedTextMainBrush  = TryFindResource("TextMainBrush")  as System.Windows.Media.Brush;
             _cachedTextWhiteBrush = TryFindResource("TextWhiteBrush") as System.Windows.Media.Brush;
+            _cachedTextBlackBrush = TryFindResource("TextBlackBrush") as System.Windows.Media.Brush;
         }
 
         private void StartTrackerSyncWhenUserAvailable()
@@ -388,7 +390,6 @@ namespace SCHLStudio.App.Views.ExplorerV2
             {
                 var role = GetAppCurrentRole();
                 var hideQc2Done = isEmployee ||
-                                  string.Equals(role, "qc", StringComparison.OrdinalIgnoreCase) ||
                                   string.Equals(role, "qcmanager", StringComparison.OrdinalIgnoreCase);
 
                 FilesQc2DoneButton.IsEnabled = !hideQc2Done;
@@ -676,6 +677,34 @@ namespace SCHLStudio.App.Views.ExplorerV2
             catch (Exception ex)
             {
                 LogSuppressedError("SelectedFilesListBox_SelectionChanged", ex);
+            }
+        }
+
+        private void SelectedFileCopyPathButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is not FrameworkElement fe)
+                {
+                    return;
+                }
+
+                var text = (fe.Tag as string ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    text = Path.GetDirectoryName(text)?.Trim() ?? string.Empty;
+                }
+
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    System.Windows.Clipboard.SetText(text);
+                }
+
+                e.Handled = true;
+            }
+            catch (Exception ex)
+            {
+                LogSuppressedError("SelectedFileCopyPathButton_Click", ex);
             }
         }
 

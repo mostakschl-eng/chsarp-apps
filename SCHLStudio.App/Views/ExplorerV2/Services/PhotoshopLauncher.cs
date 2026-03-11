@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Windows;
 using SCHLStudio.App.Services.Diagnostics;
 
 namespace SCHLStudio.App.Views.ExplorerV2.Services
 {
     internal sealed class PhotoshopLauncher
     {
+        private const int LaunchDelayMilliseconds = 400;
+
         public const string AutoKey = "auto";
         public const string Ps2026Key = "ps26";
         public const string Ps2025Key = "ps25";
@@ -51,49 +55,7 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
         {
             try
             {
-                var paths = (filePaths ?? Array.Empty<string>())
-                    .Where(p => !string.IsNullOrWhiteSpace(p))
-                    .Select(p => p.Trim())
-                    .Where(File.Exists)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                var finalPaths = new List<string>();
-                foreach (var p in paths)
-                {
-                    try
-                    {
-                        var dir = Path.GetDirectoryName(p);
-                        var baseName = Path.GetFileNameWithoutExtension(p);
-                        if (!string.IsNullOrWhiteSpace(dir) && !string.IsNullOrWhiteSpace(baseName) && Directory.Exists(dir))
-                        {
-                            var pattern = baseName + ".*";
-                            var newest = Directory.EnumerateFiles(dir, pattern, SearchOption.TopDirectoryOnly)
-                                .Where(File.Exists)
-                                .OrderByDescending(File.GetLastWriteTimeUtc)
-                                .FirstOrDefault();
-
-                            if (!string.IsNullOrWhiteSpace(newest))
-                            {
-                                finalPaths.Add(newest);
-                            }
-                            else
-                            {
-                                finalPaths.Add(p);
-                            }
-                        }
-                        else
-                        {
-                            finalPaths.Add(p);
-                        }
-                    }
-                    catch
-                    {
-                        finalPaths.Add(p);
-                    }
-                }
-
-                paths = finalPaths.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                var paths = ResolveLaunchPaths(filePaths);
 
                 if (paths.Count == 0)
                 {
@@ -108,17 +70,7 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
 
                 if (key == AutoKey)
                 {
-                    foreach (var p in paths)
-                    {
-                        try
-                        {
-                            Process.Start(new ProcessStartInfo(p) { UseShellExecute = true });
-                        }
-                        catch (Exception ex_safe_log)
-                        {
-                            NonCriticalLog.EnqueueError("ExplorerV2", "PhotoshopLauncher", ex_safe_log);
-                        }
-                    }
+                    LaunchViaShell(paths);
 
                     return;
                 }
@@ -126,27 +78,121 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                 var exe = KnownVersions.FirstOrDefault(v => string.Equals(v.Key, key, StringComparison.OrdinalIgnoreCase)).ExePath;
                 if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
                 {
-                    foreach (var p in paths)
-                    {
-                        try
-                        {
-                            Process.Start(new ProcessStartInfo(p) { UseShellExecute = true });
-                        }
-                        catch (Exception ex_safe_log)
-                        {
-                            NonCriticalLog.EnqueueError("ExplorerV2", "PhotoshopLauncher", ex_safe_log);
-                        }
-                    }
+                    ShowPhotoshopUnavailableMessage(key);
 
                     return;
                 }
 
-                var args = string.Join(" ", paths.Select(p => $"\"{p}\""));
-                Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = false });
+                LaunchViaPhotoshopExe(exe, paths);
             }
             catch (Exception ex_safe_log)
             {
                 NonCriticalLog.EnqueueError("ExplorerV2", "PhotoshopLauncher", ex_safe_log);
+            }
+        }
+
+        private static List<string> ResolveLaunchPaths(IEnumerable<string> filePaths)
+        {
+            var inputPaths = (filePaths ?? Array.Empty<string>())
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => p.Trim())
+                .Where(File.Exists)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var resolvedPaths = new List<string>();
+            foreach (var path in inputPaths)
+            {
+                try
+                {
+                    var dir = Path.GetDirectoryName(path);
+                    var baseName = Path.GetFileNameWithoutExtension(path);
+                    if (!string.IsNullOrWhiteSpace(dir) && !string.IsNullOrWhiteSpace(baseName) && Directory.Exists(dir))
+                    {
+                        var pattern = baseName + ".*";
+                        var newest = Directory.EnumerateFiles(dir, pattern, SearchOption.TopDirectoryOnly)
+                            .Where(File.Exists)
+                            .OrderByDescending(File.GetLastWriteTimeUtc)
+                            .FirstOrDefault();
+
+                        resolvedPaths.Add(string.IsNullOrWhiteSpace(newest) ? path : newest);
+                    }
+                    else
+                    {
+                        resolvedPaths.Add(path);
+                    }
+                }
+                catch
+                {
+                    resolvedPaths.Add(path);
+                }
+            }
+
+            return resolvedPaths
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static void LaunchViaShell(IReadOnlyList<string> paths)
+        {
+            for (var i = 0; i < paths.Count; i++)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(paths[i]) { UseShellExecute = true });
+                    PauseBetweenLaunches(i, paths.Count);
+                }
+                catch (Exception ex_safe_log)
+                {
+                    NonCriticalLog.EnqueueError("ExplorerV2", "PhotoshopLauncher", ex_safe_log);
+                }
+            }
+        }
+
+        private static void LaunchViaPhotoshopExe(string exe, IReadOnlyList<string> paths)
+        {
+            for (var i = 0; i < paths.Count; i++)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(exe, $"\"{paths[i]}\"") { UseShellExecute = false });
+                    PauseBetweenLaunches(i, paths.Count);
+                }
+                catch (Exception ex_safe_log)
+                {
+                    NonCriticalLog.EnqueueError("ExplorerV2", "PhotoshopLauncher", ex_safe_log);
+                }
+            }
+        }
+
+        private static void PauseBetweenLaunches(int index, int totalCount)
+        {
+            if (index < totalCount - 1)
+            {
+                Thread.Sleep(LaunchDelayMilliseconds);
+            }
+        }
+
+        private static void ShowPhotoshopUnavailableMessage(string versionKey)
+        {
+            try
+            {
+                var displayName = KnownVersions
+                    .FirstOrDefault(v => string.Equals(v.Key, versionKey, StringComparison.OrdinalIgnoreCase))
+                    .DisplayName;
+
+                var message = string.IsNullOrWhiteSpace(displayName)
+                    ? "Photoshop was not found on this computer."
+                    : displayName + " was not found on this computer.";
+
+                System.Windows.MessageBox.Show(
+                    message,
+                    "SCHL App",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+            }
+            catch
+            {
             }
         }
     }

@@ -70,9 +70,12 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
             {
                 if (SetProperty(ref _isStarted, value))
                 {
+                    OnPropertyChanged(nameof(SkipButtonText));
                     StartCommand.RaiseCanExecuteChanged();
                     OpenWithCommand.RaiseCanExecuteChanged();
                     BreakCommand.RaiseCanExecuteChanged();
+                    SkipCommand.RaiseCanExecuteChanged();
+                    WalkOutCommand.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -87,6 +90,8 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
                 {
                     StartCommand.RaiseCanExecuteChanged();
                     BreakCommand.RaiseCanExecuteChanged();
+                    SkipCommand.RaiseCanExecuteChanged();
+                    WalkOutCommand.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -228,7 +233,11 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
 
         public bool CanExecuteFinish => IsStarted && !IsPaused && SelectedFilePaths.Count > 0;
         public bool CanExecuteWalkOut => IsStarted && !IsPaused && _highlightedFiles.Count > 0;
-        public bool CanExecuteSkip => !IsPaused && _highlightedFiles.Count > 0;
+        public bool CanExecuteSkip => IsStarted
+            ? !IsPaused && _highlightedFiles.Count > 0
+            : SelectedFilePaths.Count > 0;
+
+        public string SkipButtonText => IsStarted ? "Skip" : "Clear";
 
         private string _timerDisplay = "00:00:00";
         public string TimerDisplay
@@ -353,10 +362,13 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
                     LogNonCritical("ClearSelection.SelectedFilePaths", ex);
                 }
 
+                _highlightedFiles.Clear();
                 ClearSelectionMetaLock();
 
                 StartCommand.RaiseCanExecuteChanged();
                 BreakCommand.RaiseCanExecuteChanged();
+                SkipCommand.RaiseCanExecuteChanged();
+                WalkOutCommand.RaiseCanExecuteChanged();
             }
             catch (Exception ex)
             {
@@ -401,11 +413,14 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
 
                 if ((SelectedFilePaths?.Count ?? 0) == 0)
                 {
+                    _highlightedFiles.Clear();
                     ClearSelectionMetaLock();
                 }
 
                 StartCommand.RaiseCanExecuteChanged();
                 BreakCommand.RaiseCanExecuteChanged();
+                SkipCommand.RaiseCanExecuteChanged();
+                WalkOutCommand.RaiseCanExecuteChanged();
             }
             catch (Exception ex)
             {

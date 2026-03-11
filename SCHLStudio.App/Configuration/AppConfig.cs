@@ -88,7 +88,7 @@ namespace SCHLStudio.App.Configuration
 
         // ==================== FILE PATHS ====================
 
-        public const string NETWORK_ROOT = @"P:\SCHL document\apps cache data";
+        public const string NETWORK_ROOT = @"P:\apps cache data";
 
         public static readonly string NETWORK_SETTINGS_DIR = Path.Combine(
             NETWORK_ROOT,

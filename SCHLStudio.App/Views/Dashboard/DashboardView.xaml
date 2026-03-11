@@ -2,7 +2,6 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:dash="clr-namespace:SCHLStudio.App.Views.Dashboard"
-             xmlns:tabs="clr-namespace:SCHLStudio.App.Views.LiveTracking.Tabs"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
@@ -196,7 +195,7 @@
             </TabControl.Resources>
 
             <TabItem Header="PRODUCTION">
-                <tabs:ProductionTabView />
+                <dash:DashboardProductionTabView />
             </TabItem>
             <TabItem Header="ACTIVITY">
                 <dash:DashboardActivityTabView />

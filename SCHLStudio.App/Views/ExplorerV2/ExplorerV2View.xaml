@@ -58,6 +58,34 @@
             <Setter Property="BorderThickness" Value="0" />
         </Style>
 
+        <Style x:Key="BreakHeaderButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource BgCardBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="ActionBarButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource TextWhiteBrush}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -475,23 +503,30 @@
                 </Button>
             </Border>
 
-            <Border x:Name="TimerBorder"
-                    Grid.Column="10"
-                    MinWidth="96"
-                    Height="{StaticResource ControlHeightLg}"
-                    CornerRadius="{StaticResource RadiusLg}"
-                    Background="{DynamicResource BgCardBrush}"
-                    BorderBrush="{DynamicResource DividerBrush}"
-                    BorderThickness="2"
-                    Padding="14,0"
-                    HorizontalAlignment="Right">
-                <TextBlock x:Name="TimerText"
-                           Text="{Binding TimerDisplay}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextMainBrush}"
-                           VerticalAlignment="Center" />
-            </Border>
+            <StackPanel Grid.Column="10" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="BreakButton"
+                        Content="Break"
+                        MinWidth="44"
+                        Style="{StaticResource BreakHeaderButtonStyle}"
+                        Command="{Binding BreakCommand}"
+                        Margin="0,0,10,0" />
+
+                <Border x:Name="TimerBorder"
+                        MinWidth="96"
+                        Height="{StaticResource ControlHeightLg}"
+                        CornerRadius="{StaticResource RadiusLg}"
+                        Background="{DynamicResource BgCardBrush}"
+                        BorderBrush="{DynamicResource DividerBrush}"
+                        BorderThickness="2"
+                        Padding="14,0">
+                    <TextBlock x:Name="TimerText"
+                               Text="{Binding TimerDisplay}"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextMainBrush}"
+                               VerticalAlignment="Center" />
+                </Border>
+            </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1">
@@ -859,6 +894,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="10" />
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Column="0"
@@ -874,6 +910,31 @@
                                                    Foreground="{DynamicResource TextMainBrush}"
                                                    VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis" />
+
+                                        <Button Grid.Column="3"
+                                                Width="22"
+                                                Height="22"
+                                                Padding="0"
+                                                Margin="8,0,0,0"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Cursor="Hand"
+                                                Click="SelectedFileCopyPathButton_Click"
+                                                Tag="{Binding FullPath}">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="Transparent">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                            <TextBlock Text="&#xE8C8;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center" />
+                                        </Button>
                                     </Grid>
                                 </Border>
                                 <DataTemplate.Triggers>
@@ -940,13 +1001,6 @@
                                         Command="{Binding StartCommand}"
                                         Margin="0,0,4,0" />
 
-                                <Button x:Name="BreakButton"
-                                        Content="Break"
-                                        MinWidth="44"
-                                        Style="{StaticResource HeaderButtonStyle}"
-                                        Command="{Binding BreakCommand}"
-                                        Margin="0,0,4,0" />
-
                                 <Button x:Name="FinishButton"
                                         Content="Finish"
                                         MinWidth="44"
@@ -964,7 +1018,7 @@
                                         Margin="0,0,4,0" />
 
                                 <Button x:Name="SkipButton"
-                                        Content="Skip"
+                                    Content="{Binding SkipButtonText}"
                                         MinWidth="44"
                                         Style="{StaticResource HeaderButtonStyle}"
                                         Command="{Binding SkipCommand}" />

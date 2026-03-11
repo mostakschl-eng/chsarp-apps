@@ -121,6 +121,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 try
                 {
                     selected = _vm.SelectedFiles
+                        .OfType<SelectedFileRow>()
                         .Select(x => (x?.FullPath ?? string.Empty).Trim())
                         .Where(x => !string.IsNullOrWhiteSpace(x))
                         .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -129,16 +130,6 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 catch (Exception ex_safe_log)
                 {
                     LogSuppressedError("ExplorerV2View.Menus", ex_safe_log);
-                }
-
-                if (selected.Count == 0)
-                {
-                    selected = FilesListView?.SelectedItems
-                        ?.OfType<FileTileItem>()
-                        .Select(x => (x?.FullPath ?? string.Empty).Trim())
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .ToList() ?? new List<string>();
                 }
 
                 if (selected.Count == 0)
