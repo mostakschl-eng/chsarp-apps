@@ -369,6 +369,9 @@ namespace SCHLStudio.App.ViewModels.Windows
                 ? response.DisplayName
                 : Username;
             Configuration.AppConfig.SetCurrentDisplayName(displayName);
+
+            // Store activeWork for ExplorerV2 to consume on initialization
+            Configuration.AppConfig.SetPendingActiveWork(response.ActiveWork);
         }
 
         private (CancellationTokenSource Cts, CancellationToken Token, int OperationId) BeginOperation(string status)

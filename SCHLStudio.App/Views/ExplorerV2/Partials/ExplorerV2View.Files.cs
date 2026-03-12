@@ -358,6 +358,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 var baseDir = string.Empty;
                 baseDir = GetActiveJobFolderPath();
 
+                _fileIndexService.InvalidateDoneRootCache(baseDir);
+
                 RefreshFileTilesForCurrentContext(baseDir);
             }
             catch (Exception relEx)

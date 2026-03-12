@@ -72,6 +72,7 @@ namespace SCHLStudio.App.Services.Api.Tracker
                 Files = filePaths.Select(fp => new QcWorkLogFileDto
                 {
                     FileName = NormalizeFileName(fp),
+                    FilePath = (fp ?? string.Empty).Trim(),
                     TimeSpent = perFileTime,
                 }).ToList()
             };
@@ -110,6 +111,7 @@ namespace SCHLStudio.App.Services.Api.Tracker
                 Files = filePaths.Select(fp => new QcWorkLogFileDto
                 {
                     FileName = NormalizeFileName(fp),
+                    FilePath = (fp ?? string.Empty).Trim(),
                     TimeSpent = perFileTimeSpent,
                 }).ToList(),
             };

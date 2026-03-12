@@ -29,6 +29,7 @@ namespace SCHLStudio.App.Services.Api.Tracker
     public sealed class QcWorkLogFileDto
     {
         public string FileName { get; set; } = string.Empty;
+        public string? FilePath { get; set; }
         public int? TimeSpent { get; set; }
 
         [JsonIgnore]

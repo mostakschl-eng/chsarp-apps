@@ -22,6 +22,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
     {
         private readonly ExplorerV2ViewModel _vm = new ExplorerV2ViewModel();
 
+        public bool HasActiveWorkSession => _vm.IsStarted;
+
         private bool _isFinishRunning;
         private bool _isWalkOutRunning;
         private bool _isSkipRunning;
@@ -193,6 +195,13 @@ namespace SCHLStudio.App.Views.ExplorerV2
             // Auto-open the Job List panel on app load
             RunNonCritical(OpenJobListPanel, "ExplorerV2.Loaded.OpenJobListPanel");
             RunNonCriticalAsync(() => LoadJobListFromApiAsync(), "ExplorerV2.Loaded.LoadJobList");
+
+            // Defer the restore check until the UI has fully rendered, to prevent
+            // a black screen behind the blocking MessageBox.Show dialog.
+            _ = Dispatcher.InvokeAsync(() =>
+            {
+                RunNonCritical(TryRestoreActiveWork, "ExplorerV2.Loaded.TryRestoreActiveWork");
+            }, System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
         private void CacheBrushes()
@@ -204,6 +213,179 @@ namespace SCHLStudio.App.Views.ExplorerV2
             _cachedTextMainBrush  = TryFindResource("TextMainBrush")  as System.Windows.Media.Brush;
             _cachedTextWhiteBrush = TryFindResource("TextWhiteBrush") as System.Windows.Media.Brush;
             _cachedTextBlackBrush = TryFindResource("TextBlackBrush") as System.Windows.Media.Brush;
+        }
+
+        /// <summary>
+        /// Check for unfinished working files from a previous crashed/closed session.
+        /// If found, prompt the user and restore the UI state.
+        /// </summary>
+        private void TryRestoreActiveWork()
+        {
+            try
+            {
+                var activeWork = Configuration.AppConfig.PendingActiveWork;
+                if (activeWork is null || activeWork.Files.Count == 0)
+                {
+                    return;
+                }
+
+                // Consume immediately — prevent double-processing on tab switch
+                Configuration.AppConfig.ClearPendingActiveWork();
+
+                var fileCount = activeWork.Files.Count;
+
+                // ── 1. Set active job metadata ──
+                SetActiveJob(
+                    activeWork.ClientCode,
+                    activeWork.FolderPath,
+                    activeWork.Categories);
+
+                // ── 2. Populate selected files ──
+                _vm.SelectedFiles.Clear();
+                var serial = 1;
+                foreach (var file in activeWork.Files)
+                {
+                    var fullPath = (file.FilePath ?? string.Empty).Trim();
+                    var fileName = (file.FileName ?? string.Empty).Trim();
+
+                    // If no file_path stored, construct a display name from file_name
+                    if (string.IsNullOrWhiteSpace(fullPath) && !string.IsNullOrWhiteSpace(fileName))
+                    {
+                        fullPath = fileName;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(fullPath))
+                    {
+                        continue;
+                    }
+
+                    // Derive display file name from the path
+                    var displayName = fileName;
+                    if (string.IsNullOrWhiteSpace(displayName))
+                    {
+                        try { displayName = System.IO.Path.GetFileNameWithoutExtension(fullPath); }
+                        catch { displayName = fullPath; }
+                    }
+
+                    _vm.SelectedFiles.Add(new Models.SelectedFileRow
+                    {
+                        Serial = serial++,
+                        FullPath = fullPath,
+                        FileName = fileName,
+                        DisplayFileName = displayName ?? fullPath,
+                    });
+                }
+
+                if (_vm.SelectedFiles.Count == 0)
+                {
+                    return;
+                }
+
+                _vm.SelectedFilePaths.Clear();
+                foreach (var f in _vm.SelectedFiles)
+                {
+                    _vm.SelectedFilePaths.Add(f.FullPath);
+                }
+
+                //   Total = (Now - earliest working file started_at)
+                var workingTime = TimeSpan.Zero;
+
+                // Find the earliest started_at among working files
+                DateTimeOffset? earliestStart = null;
+                foreach (var file in activeWork.Files)
+                {
+                    if (file.StartedAt.HasValue)
+                    {
+                        if (!earliestStart.HasValue || file.StartedAt.Value < earliestStart.Value)
+                        {
+                            earliestStart = file.StartedAt.Value;
+                        }
+                    }
+                }
+
+                if (earliestStart.HasValue)
+                {
+                    workingTime = DateTimeOffset.UtcNow - earliestStart.Value;
+                    if (workingTime < TimeSpan.Zero) workingTime = TimeSpan.Zero;
+                }
+
+                var recoveredElapsed = workingTime;
+
+                // ── 4. Start timer with recovered elapsed time ──
+                EnsureTimerHooked();
+                _workTimerElapsed = recoveredElapsed;
+                _workTimerRunningSince = DateTime.Now;
+                _workTimer.Start();
+                UpdateTimerText();
+
+                // ── 5. Set working state ──
+                _vm.WorkTypeButtonText = string.IsNullOrWhiteSpace(activeWork.WorkType) ? "Production" : activeWork.WorkType;
+                _vm.LockSelectionMeta(
+                    activeWork.ClientCode,
+                    _vm.WorkTypeButtonText,
+                    (activeWork.Categories ?? string.Empty)
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(x => x.Trim())
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .ToList(),
+                    activeWork.EstimateTime > 0 ? activeWork.EstimateTime : null,
+                    activeWork.Shift);
+                _vm.IsStarted = true;
+                _vm.IsPaused = false;
+                _vm.StartButtonText = "Pause";
+                _vm.IsFinishEnabled = true;
+                _vm.IsWalkOutEnabled = true;
+                _vm.IsSkipEnabled = true;
+
+                // Apply running style
+                if (_cachedWarningBrush != null) StartButton.Background = _cachedWarningBrush;
+                if (_cachedTextWhiteBrush != null) StartButton.Foreground = _cachedTextWhiteBrush;
+
+                // ── 6. Start tracker session + queue working ──
+                TrackerStartSession();
+                var filePaths = _vm.SelectedFiles.Select(f => f.FullPath).ToList();
+                TrackerQueueWorking(filePaths);
+
+                // Start idle monitor
+                RunNonCritical(StartIdleMonitor, "ExplorerV2.RestoreActiveWork.StartIdleMonitor");
+
+                UpdateSelectedFilesMetaText();
+
+                // Force the UI job list to highlight the restored job
+                bool jlpUpdated = false;
+                foreach (var row in _jlpRows)
+                {
+                    if (row is null) continue;
+                    bool isMatch = string.Equals(row.ClientCode?.Trim(), activeWork.ClientCode?.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                                   string.Equals(row.FolderPath?.Trim(), activeWork.FolderPath?.Trim(), StringComparison.OrdinalIgnoreCase);
+                    if (row.IsAdded != isMatch)
+                    {
+                        row.IsAdded = isMatch;
+                        jlpUpdated = true;
+                    }
+                }
+                
+                foreach (var row in _jobListRows)
+                {
+                    if (row is null) continue;
+                    bool isMatch = string.Equals(row.ClientCode?.Trim(), activeWork.ClientCode?.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                                   string.Equals(row.FolderPath?.Trim(), activeWork.FolderPath?.Trim(), StringComparison.OrdinalIgnoreCase);
+                    row.IsAdded = isMatch;
+                }
+
+                if (jlpUpdated)
+                {
+                    JlpRefreshAfterDataChange();
+                    try { JlpJobsList?.Items.Refresh(); } catch { }
+                }
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"[ExplorerV2] Restored {fileCount} working files. Timer starts at {recoveredElapsed:hh\\:mm\\:ss}");
+            }
+            catch (Exception ex)
+            {
+                LogSuppressedError("ExplorerV2.TryRestoreActiveWork", ex);
+            }
         }
 
         private void StartTrackerSyncWhenUserAvailable()
@@ -410,6 +592,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
         private void PostActionCleanup(string? baseDir)
         {
             RunNonCritical(UpdateSelectedFilesMetaText, "ExplorerV2.PostActionCleanup.UpdateSelectedFilesMetaText");
+            RunNonCritical(() => _fileIndexService.InvalidateDoneRootCache(baseDir), "ExplorerV2.PostActionCleanup.InvalidateDoneRootCache");
             RunNonCritical(() => RefreshFileTilesForCurrentContext(baseDir), "ExplorerV2.PostActionCleanup.RefreshFileTiles");
         }
 
@@ -627,7 +810,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 {
                     if (showClient && _vm.IsStarted && !_vm.HasSelectionMetaLock)
                     {
-                        _vm.LockSelectionMeta(_vm.ActiveJobClientCode, workType, tasks, etValue);
+                        _vm.LockSelectionMeta(_vm.ActiveJobClientCode, workType, tasks, etValue, SCHLStudio.App.Services.Api.Tracker.ShiftDetector.GetCurrentShift());
                     }
                 }
                 catch (Exception ex_safe_log)

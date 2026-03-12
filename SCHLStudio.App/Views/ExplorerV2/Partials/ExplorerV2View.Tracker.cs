@@ -462,6 +462,27 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
+        private string GetEffectiveShiftForTracker()
+        {
+            try
+            {
+                if (_vm.HasSelectionMetaLock)
+                {
+                    var locked = (_vm.SelectionLockedShift ?? string.Empty).Trim();
+                    if (!string.IsNullOrWhiteSpace(locked))
+                    {
+                        return locked;
+                    }
+                }
+
+                return ShiftDetector.GetCurrentShift();
+            }
+            catch
+            {
+                return ShiftDetector.GetCurrentShift();
+            }
+        }
+
         private List<PauseReasonDto>? BuildPauseReasons()
         {
             try
@@ -515,7 +536,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     var dto = TrackerDtoFactory.CreateQcStatusDto(
                         employeeName: Configuration.AppConfig.CurrentDisplayName,
                         workType: workType,
-                        shift: ShiftDetector.GetCurrentShift(),
+                        shift: GetEffectiveShiftForTracker(),
                         clientCode: GetEffectiveClientCodeForTracker(),
                         folderPath: GetActiveJobFolderPath(),
                         estimateTime: estimateTime,
@@ -619,7 +640,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     {
                         EmployeeName = (Configuration.AppConfig.CurrentDisplayName ?? string.Empty).ToLowerInvariant(),
                         WorkType = (workType ?? string.Empty).ToLowerInvariant(),
-                        Shift = ShiftDetector.GetCurrentShift(),
+                        Shift = GetEffectiveShiftForTracker(),
                         ClientCode = GetEffectiveClientCodeForTracker(),
                         FolderPath = GetActiveJobFolderPath(),
                         EstimateTime = GetEffectiveETForTracker(),

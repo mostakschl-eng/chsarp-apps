@@ -449,8 +449,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 if (!row.IsAdded)
                 {
-                    // Only one active job at a time
-                    var anyOtherActive = _jlpRows.Any(x => !ReferenceEquals(x, row) && x.IsAdded);
+                    // Only one active job at a time across all tabs
+                    var anyOtherActive = _jobListRows.Any(x => !ReferenceEquals(x, row) && x.IsAdded);
                     if (anyOtherActive)
                     {
                         try
@@ -560,6 +560,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
+                _fileIndexService.InvalidateDoneRootCache(GetActiveJobFolderPath());
                 SetActiveJob(null, null, null);
                 try { _vm.ReplaceFileTiles(Array.Empty<FileTileItem>()); }
                 catch (Exception ex) { LogSuppressedError("ExplorerV2View.JobListPanel", ex); }

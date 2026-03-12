@@ -127,7 +127,7 @@ namespace SCHLStudio.App.Views.Windows
                 // Block logout while user has active work timer running
                 try
                 {
-                    if (ExplorerV2?.DataContext is ExplorerV2ViewModel vm && vm.IsStarted)
+                    if (ExplorerV2?.HasActiveWorkSession == true)
                     {
                         System.Windows.MessageBox.Show(
                             "Please finish your current work before logging out.",

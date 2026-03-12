@@ -2,7 +2,7 @@
 
 ## ✅ Clean Build (Recommended First)
 
-
+dotnet build SCHLStudio.App\SCHLStudio.App.csproj
 
 
 dotnet run --project .\SCHLStudio.App\SCHLStudio.App.csproj

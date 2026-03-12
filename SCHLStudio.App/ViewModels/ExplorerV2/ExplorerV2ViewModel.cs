@@ -277,6 +277,13 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
             private set => SetProperty(ref _selectionLockedEt, value);
         }
 
+        private string? _selectionLockedShift;
+        public string? SelectionLockedShift
+        {
+            get => _selectionLockedShift;
+            private set => SetProperty(ref _selectionLockedShift, value);
+        }
+
         private string _selectedFilesMetaText = string.Empty;
         public string SelectedFilesMetaText
         {
@@ -437,6 +444,7 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
                 SelectionLockedWorkType = null;
                 _selectionLockedTasks = new List<string>();
                 SelectionLockedEt = null;
+                SelectionLockedShift = null;
             }
             catch (Exception ex)
             {
@@ -444,7 +452,7 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
             }
         }
 
-        public void LockSelectionMeta(string? clientCode, string? workType, IReadOnlyList<string>? tasks, int? et)
+        public void LockSelectionMeta(string? clientCode, string? workType, IReadOnlyList<string>? tasks, int? et, string? shift = null)
         {
             try
             {
@@ -458,6 +466,7 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
                     .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
                     .ToList();
                 SelectionLockedEt = et;
+                SelectionLockedShift = (shift ?? string.Empty).Trim();
             }
             catch (Exception ex)
             {

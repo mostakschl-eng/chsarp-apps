@@ -71,6 +71,56 @@ namespace SCHLStudio.App.Services.Api
                             {
                                 userId = uid.ValueKind == JsonValueKind.String ? uid.GetString() : uid.ToString();
                             }
+
+                            ActiveWorkData? activeWork = null;
+                            try
+                            {
+                                if (doc.RootElement.TryGetProperty("activeWork", out var aw) && aw.ValueKind == JsonValueKind.Object)
+                                {
+                                    activeWork = new ActiveWorkData
+                                    {
+                                        ClientCode = aw.TryGetProperty("client_code", out var cc) ? cc.GetString() ?? string.Empty : string.Empty,
+                                        FolderPath = aw.TryGetProperty("folder_path", out var fp) ? fp.GetString() ?? string.Empty : string.Empty,
+                                        Shift = aw.TryGetProperty("shift", out var sh) ? sh.GetString() ?? string.Empty : string.Empty,
+                                        WorkType = aw.TryGetProperty("work_type", out var wt) ? wt.GetString() ?? string.Empty : string.Empty,
+                                        EstimateTime = aw.TryGetProperty("estimate_time", out var et) && et.ValueKind == JsonValueKind.Number ? et.GetInt32() : 0,
+                                        Categories = aw.TryGetProperty("categories", out var ct) ? ct.GetString() ?? string.Empty : string.Empty,
+                                        DoneTimeTotal = aw.TryGetProperty("done_time_total", out var dt) && dt.ValueKind == JsonValueKind.Number ? dt.GetInt32() : 0,
+                                    };
+
+                                    if (aw.TryGetProperty("files", out var filesArr) && filesArr.ValueKind == JsonValueKind.Array)
+                                    {
+                                        foreach (var fEl in filesArr.EnumerateArray())
+                                        {
+                                            var awf = new ActiveWorkFile
+                                            {
+                                                FileName = fEl.TryGetProperty("file_name", out var fn) ? fn.GetString() ?? string.Empty : string.Empty,
+                                                FilePath = fEl.TryGetProperty("file_path", out var fpath) ? fpath.GetString() ?? string.Empty : string.Empty,
+                                                TimeSpent = fEl.TryGetProperty("time_spent", out var ts) && ts.ValueKind == JsonValueKind.Number ? ts.GetInt32() : 0,
+                                            };
+
+                                            if (fEl.TryGetProperty("started_at", out var sa) && sa.ValueKind == JsonValueKind.String)
+                                            {
+                                                if (DateTimeOffset.TryParse(sa.GetString(), out var parsed))
+                                                {
+                                                    awf.StartedAt = parsed;
+                                                }
+                                            }
+
+                                            activeWork.Files.Add(awf);
+                                        }
+                                    }
+
+                                    // If no working files, discard
+                                    if (activeWork.Files.Count == 0) activeWork = null;
+                                }
+                            }
+                            catch (Exception exAw)
+                            {
+                                LogNonCritical("LoginAsync.ParseActiveWork", exAw);
+                                activeWork = null;
+                            }
+
                             return new ApiLoginResult
                             {
                                 Success = true,
@@ -80,6 +130,7 @@ namespace SCHLStudio.App.Services.Api
                                 DisplayName = dname,
                                 SessionId = sessionId,
                                 UserId = userId,
+                                ActiveWork = activeWork,
                             };
                         }
                     }

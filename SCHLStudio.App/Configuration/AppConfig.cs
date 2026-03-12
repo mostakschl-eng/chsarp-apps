@@ -88,7 +88,7 @@ namespace SCHLStudio.App.Configuration
 
         // ==================== FILE PATHS ====================
 
-        public const string NETWORK_ROOT = @"P:\apps cache data";
+        public const string NETWORK_ROOT = @"P:\SCHL document\apps cache data";
 
         public static readonly string NETWORK_SETTINGS_DIR = Path.Combine(
             NETWORK_ROOT,
@@ -276,6 +276,26 @@ namespace SCHLStudio.App.Configuration
             {
                 _currentTrackerUserId = null;
             }
+        }
+
+        // ── Session Resumption ──
+
+        private static Services.Api.ActiveWorkData? _pendingActiveWork;
+
+        /// <summary>
+        /// Active work data from the login response, available for ExplorerV2 to consume once.
+        /// After consumption, call <see cref="ClearPendingActiveWork"/> to prevent double-processing.
+        /// </summary>
+        public static Services.Api.ActiveWorkData? PendingActiveWork => _pendingActiveWork;
+
+        public static void SetPendingActiveWork(Services.Api.ActiveWorkData? data)
+        {
+            _pendingActiveWork = data;
+        }
+
+        public static void ClearPendingActiveWork()
+        {
+            _pendingActiveWork = null;
         }
 
         private static string EnsureDirectorySafe(string? value)

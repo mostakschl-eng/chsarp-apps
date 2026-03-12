@@ -393,20 +393,8 @@ namespace SCHLStudio.App
                     return;
                 }
 
-                // Close (X) should NOT logout or exit.
-                // Instead, keep the app running in background and just hide the window.
-                if (sender is Window w)
-                {
-                    e.Cancel = true;
-                    try
-                    {
-                        w.WindowState = WindowState.Minimized;
-                        w.Hide();
-                    }
-                    catch
-                    {
-                    }
-                }
+                // Logged-in close should exit the app normally.
+                // Logout remains an explicit separate action.
             }
             catch (Exception ex)
             {
@@ -500,20 +488,6 @@ namespace SCHLStudio.App
                             catch
                             {
                             }
-                        }
-
-                        // Close session so backend marks logout_at (handles Windows shutdown, Alt+F4, Task Manager kill)
-                        try
-                        {
-                            var sid = AppConfig.CurrentTrackerSessionId;
-                            if (!string.IsNullOrWhiteSpace(sid))
-                            {
-                                apiClient.LogoutAsync(sid).Wait(TimeSpan.FromSeconds(3));
-                            }
-                        }
-                        catch
-                        {
-                            // Best-effort — if network is already dead, we can't do anything
                         }
 
                         apiClient.Stop();

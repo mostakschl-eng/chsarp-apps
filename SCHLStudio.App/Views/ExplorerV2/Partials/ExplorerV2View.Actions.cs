@@ -194,7 +194,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     etValue = null;
                 }
 
-                _vm.LockSelectionMeta(_vm.ActiveJobClientCode, workType, tasks, etValue);
+                _vm.LockSelectionMeta(_vm.ActiveJobClientCode, workType, tasks, etValue, SCHLStudio.App.Services.Api.Tracker.ShiftDetector.GetCurrentShift());
                 UpdateSelectedFilesMetaText();
 
                 return true;
