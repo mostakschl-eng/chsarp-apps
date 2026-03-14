@@ -113,14 +113,17 @@
         </Border>
 
         <!-- Client Lists -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer x:Name="RootScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,10,0">
                 <!-- Working Section -->
                 <TextBlock Text="WORKING CLIENTS" Style="{StaticResource LiveCardLabelStyle}" Foreground="#34C759" Margin="6,0,0,10" />
                 <ListView ItemsSource="{Binding ClientTab.WorkingClients}"
                           Style="{StaticResource LiveListViewStyle}"
                           ItemContainerStyle="{StaticResource LiveListViewItemStyle}"
-                          Margin="0,0,0,20">
+                          Margin="0,0,0,20"
+                          PreviewMouseWheel="ListView_PreviewMouseWheel"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Disabled">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid>
@@ -159,7 +162,10 @@
                 <TextBlock Text="NOT WORKING CLIENTS" Style="{StaticResource LiveCardLabelStyle}" Opacity="0.6" Margin="6,0,0,10" />
                 <ListView ItemsSource="{Binding ClientTab.InactiveClients}"
                           Style="{StaticResource LiveListViewStyle}"
-                          ItemContainerStyle="{StaticResource LiveListViewItemStyle}">
+                          ItemContainerStyle="{StaticResource LiveListViewItemStyle}"
+                          PreviewMouseWheel="ListView_PreviewMouseWheel"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Disabled">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Opacity="0.7">

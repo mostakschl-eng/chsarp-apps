@@ -407,6 +407,7 @@ namespace SCHLStudio.App.Configuration
             "Dinner",
             "Toilet",
             "Namaz",
+            "Guideline Review",
             "Meeting",
             "Other..."
         ];

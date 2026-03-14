@@ -27,6 +27,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
 
         private readonly ILiveTrackingDataService _dataService;
         private readonly DispatcherTimer _uiRefreshTimer;
+        private readonly DispatcherTimer _autoRefreshTimer;
         private readonly SemaphoreSlim _loadLock = new SemaphoreSlim(1, 1);
         private bool _isTrackingStarted;
 
@@ -285,6 +286,17 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                 }
             };
 
+            // Auto-refresh timer: fetches a clean server snapshot periodically
+            // to self-heal any drift from missed or partial WebSocket deltas.
+            // Only runs while the user is on the Live Tracking page.
+            _autoRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(60),
+            };
+            _autoRefreshTimer.Tick += (s, e) =>
+            {
+                _ = LoadDataAsync();
+            };
 
             ToggleSingleDatePopupCommand = new RelayCommand(_ =>
             {
@@ -404,7 +416,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
 
             ReloadCommand = new RelayCommand(_ =>
             {
-                _ = LoadDataAsync(hardRefresh: true);
+                _ = LoadDataAsync();
             });
 
             PendingSingleDate = SelectedDate;
@@ -421,26 +433,31 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
             }
 
             if (!_uiRefreshTimer.IsEnabled)
-            {
                 _uiRefreshTimer.Start();
-            }
 
+            if (!_autoRefreshTimer.IsEnabled)
+                _autoRefreshTimer.Start();
 
-            // Always do an immediate data load when this tab becomes active
+            // Always do an immediate full load when this tab becomes active
             _ = LoadDataAsync();
         }
 
         public void StopTracking()
         {
-            _isTrackingStarted = false;
+            // Only pause the polling timers — the WebSocket connection and
+            // cached data stay alive so returning to this tab is instant.
+            // StartTracking() will restart timers and do a sync load.
             _uiRefreshTimer.Stop();
-            _dataService.StopRealTimeUpdates();
+            _autoRefreshTimer.Stop();
         }
 
         public void SetForegroundMode()
         {
             if (!_uiRefreshTimer.IsEnabled)
                 _uiRefreshTimer.Start();
+
+            if (!_autoRefreshTimer.IsEnabled)
+                _autoRefreshTimer.Start();
 
             _ = LoadDataAsync();
         }
@@ -934,7 +951,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
             });
         }
 
-        public async Task LoadDataAsync(bool hardRefresh = false)
+        public async Task LoadDataAsync()
         {
             // Use a semaphore so at most one load runs at a time.
             // If a load is already in progress, skip this tick to avoid flooding the server.
@@ -943,134 +960,6 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
             try
             {
                 IsLoading = true;
-
-                if (hardRefresh)
-                {
-                    try
-                    {
-                        _allData = null;
-                        _allSessionData = new List<TrackerUserSessionModel>();
-                        PauseTab.ResetSessionSnapshot();
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                var previousWorkLogs = _allData;
-                var previousSessions = _allSessionData;
-
-                static string KeyOf(LiveTrackingSessionModel s)
-                {
-                    if (s == null) return string.Empty;
-                    return string.Join("|||",
-                        (s.EmployeeName ?? string.Empty).Trim().ToLowerInvariant(),
-                        (s.Shift ?? string.Empty).Trim().ToLowerInvariant(),
-                        (s.FolderPath ?? string.Empty).Trim().ToLowerInvariant(),
-                        (s.WorkType ?? string.Empty).Trim().ToLowerInvariant(),
-                        (s.ClientCode ?? string.Empty).Trim().ToLowerInvariant());
-                }
-
-                void PreserveRecentActiveSessions(System.Collections.Generic.List<LiveTrackingSessionModel> incoming)
-                {
-                    if (incoming == null || incoming.Count == 0) return;
-                    if (previousWorkLogs == null || previousWorkLogs.Count == 0) return;
-
-                    var prevByKey = previousWorkLogs
-                        .Where(s => s != null)
-                        .GroupBy(KeyOf)
-                        .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.UpdatedAt).First());
-
-                    var nowUtc = DateTime.UtcNow;
-
-                    foreach (var inc in incoming)
-                    {
-                        if (inc == null) continue;
-                        if (inc.IsActive) continue;
-
-                        var key = KeyOf(inc);
-                        if (string.IsNullOrWhiteSpace(key)) continue;
-
-                        if (!prevByKey.TryGetValue(key, out var prev) || prev == null) continue;
-                        if (!prev.IsActive) continue;
-
-                        var prevUpdatedUtc = ToUtcSafe(prev.UpdatedAt);
-                        if ((nowUtc - prevUpdatedUtc) > TimeSpan.FromSeconds(60)) continue;
-
-                        if (ToUtcSafe(inc.UpdatedAt) >= prevUpdatedUtc) continue;
-
-                        inc.EmployeeName = prev.EmployeeName;
-                        inc.Shift = prev.Shift;
-                        inc.FolderPath = prev.FolderPath;
-                        inc.WorkType = prev.WorkType;
-                        inc.ClientCode = prev.ClientCode;
-                        inc.Categories = prev.Categories;
-                        inc.EstimateTime = prev.EstimateTime;
-                        inc.TotalTimes = prev.TotalTimes;
-                        inc.PauseCount = prev.PauseCount;
-                        inc.PauseTime = prev.PauseTime;
-                        inc.PauseReasons = prev.PauseReasons;
-
-                        inc.Files.Clear();
-                        foreach (var f in prev.Files) inc.Files.Add(f);
-                        inc.NotifyFilesChanged();
-                    }
-                }
-
-                static List<LiveTrackingSessionModel> MergeWorkLogs(
-                    List<LiveTrackingSessionModel>? previous,
-                    List<LiveTrackingSessionModel> incoming,
-                    Func<LiveTrackingSessionModel, string> keyOf,
-                    Func<DateTime, DateTime> toUtcSafe)
-                {
-                    var result = new List<LiveTrackingSessionModel>();
-                    var prevList = previous ?? new List<LiveTrackingSessionModel>();
-                    var prevByKey = prevList
-                        .Where(s => s != null)
-                        .GroupBy(keyOf)
-                        .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.UpdatedAt).First());
-
-                    var nowUtc = DateTime.UtcNow;
-
-                    foreach (var inc in incoming.Where(s => s != null))
-                    {
-                        var key = keyOf(inc);
-                        if (!string.IsNullOrWhiteSpace(key) && prevByKey.TryGetValue(key, out var prev) && prev != null)
-                        {
-                            var incUpdatedUtc = toUtcSafe(inc.UpdatedAt);
-                            var prevUpdatedUtc = toUtcSafe(prev.UpdatedAt);
-
-                            if (prevUpdatedUtc > incUpdatedUtc)
-                            {
-                                result.Add(prev);
-                            }
-                            else
-                            {
-                                result.Add(inc);
-                            }
-
-                            prevByKey.Remove(key);
-                        }
-                        else
-                        {
-                            result.Add(inc);
-                        }
-                    }
-
-                    foreach (var kv in prevByKey)
-                    {
-                        var prev = kv.Value;
-                        if (prev == null) continue;
-
-                        var prevUpdatedUtc = toUtcSafe(prev.UpdatedAt);
-                        if (prev.IsActive || (nowUtc - prevUpdatedUtc) <= TimeSpan.FromMinutes(2))
-                        {
-                            result.Add(prev);
-                        }
-                    }
-
-                    return result;
-                }
 
                 LiveTrackingSnapshot? snapshot;
                 if (DateFrom.HasValue && DateTo.HasValue)
@@ -1085,41 +974,25 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                     snapshot = await _dataService.GetLiveTrackingDataAsync(selectedDate);
                 }
 
-                var incomingWorkLogs = snapshot?.WorkLogs ?? new List<LiveTrackingSessionModel>();
-                var incomingSessions = snapshot?.Sessions?.Where(s => s != null).ToList() ?? new List<TrackerUserSessionModel>();
+                // Always replace in-memory state with the fresh server snapshot.
+                // WebSocket deltas handle real-time updates between snapshots;
+                // this periodic reload acts as a safety net to self-heal any drift.
+                _allData = snapshot?.WorkLogs ?? new List<LiveTrackingSessionModel>();
+                _allSessionData = snapshot?.Sessions?.Where(s => s != null).ToList()
+                                  ?? new List<TrackerUserSessionModel>();
 
-                if (!hardRefresh && incomingWorkLogs.Count == 0 && previousWorkLogs != null && previousWorkLogs.Count > 0)
+                PauseTab.ResetSessionSnapshot();
+                if (snapshot?.Sessions != null)
                 {
-                    Debug.WriteLine("[LiveTrackingViewModel] Snapshot reload returned 0 worklogs; keeping previous.");
-                    _allData = previousWorkLogs;
-                    _allSessionData = previousSessions ?? new List<TrackerUserSessionModel>();
-                }
-                else
-                {
-                    if (!hardRefresh)
+                    foreach (var s in snapshot.Sessions)
                     {
-                        PreserveRecentActiveSessions(incomingWorkLogs);
-                        _allData = MergeWorkLogs(previousWorkLogs, incomingWorkLogs, KeyOf, ToUtcSafe);
-                    }
-                    else
-                    {
-                        _allData = incomingWorkLogs;
-                    }
-                    _allSessionData = incomingSessions;
-
-                    PauseTab.ResetSessionSnapshot();
-                    if (snapshot?.Sessions != null)
-                    {
-                        foreach (var s in snapshot.Sessions)
-                        {
-                            if (s == null) continue;
-                            PauseTab.ApplySessionUpdate(
-                                s.Username,
-                                s.FirstLoginAt,
-                                s.IsActive ? null : s.LastLogoutAt,
-                                s.TotalDurationSeconds
-                            );
-                        }
+                        if (s == null) continue;
+                        PauseTab.ApplySessionUpdate(
+                            s.Username,
+                            s.FirstLoginAt,
+                            s.IsActive ? null : s.LastLogoutAt,
+                            s.TotalDurationSeconds
+                        );
                     }
                 }
 

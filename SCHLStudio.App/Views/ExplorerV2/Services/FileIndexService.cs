@@ -11,6 +11,7 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
     internal sealed class FileIndexService
     {
         private static readonly TimeSpan DoneRootCacheLifetime = TimeSpan.FromSeconds(15);
+        private static readonly TimeSpan ScanCacheLifetime = TimeSpan.FromSeconds(5);
 
         private static readonly HashSet<string> AllowedExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -19,6 +20,10 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
 
         private readonly object _doneRootCacheLock = new object();
         private readonly Dictionary<string, Dictionary<FilesViewMode, DoneRootCacheEntry>> _doneRootCache = new Dictionary<string, Dictionary<FilesViewMode, DoneRootCacheEntry>>(StringComparer.OrdinalIgnoreCase);
+
+        private readonly object _scanCacheLock = new object();
+        private readonly Dictionary<string, (DateTime CachedAtUtc, IReadOnlyList<FileTileItem> Tiles)> _scanCache
+            = new Dictionary<string, (DateTime, IReadOnlyList<FileTileItem>)>(StringComparer.OrdinalIgnoreCase);
 
         private static readonly HashSet<string> BaseIgnoreFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -120,16 +125,30 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
 
         public void InvalidateDoneRootCache(string? baseDirectoryPath = null)
         {
+            var baseDir = (baseDirectoryPath ?? string.Empty).Trim();
+
             lock (_doneRootCacheLock)
             {
-                var baseDir = (baseDirectoryPath ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(baseDir))
+                    _doneRootCache.Clear();
+                else
+                    _doneRootCache.Remove(baseDir);
+            }
+
+            lock (_scanCacheLock)
+            {
                 if (string.IsNullOrWhiteSpace(baseDir))
                 {
-                    _doneRootCache.Clear();
-                    return;
+                    _scanCache.Clear();
                 }
-
-                _doneRootCache.Remove(baseDir);
+                else
+                {
+                    var keysToRemove = _scanCache.Keys
+                        .Where(k => k.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    foreach (var key in keysToRemove)
+                        _scanCache.Remove(key);
+                }
             }
         }
 
@@ -388,6 +407,19 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
         {
             try
             {
+                var baseDir = (baseDirectoryPath ?? string.Empty).Trim();
+
+                // Scan cache: return cached result if fresh (< 5 seconds old).
+                var cacheKey = baseDir + "|" + mode;
+                lock (_scanCacheLock)
+                {
+                    if (_scanCache.TryGetValue(cacheKey, out var cached)
+                        && (DateTime.UtcNow - cached.CachedAtUtc) <= ScanCacheLifetime)
+                    {
+                        return cached.Tiles;
+                    }
+                }
+
                 var allowedExts = AllowedExts;
                 var ignoreFolderNames = new HashSet<string>(BaseIgnoreFolderNames, StringComparer.OrdinalIgnoreCase);
 
@@ -457,7 +489,6 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                     _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 };
 
-                var baseDir = (baseDirectoryPath ?? string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(baseDir) || !Directory.Exists(baseDir))
                 {
                     return Array.Empty<FileTileItem>();
@@ -570,6 +601,12 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                     {
                         NonCriticalLog.EnqueueError("ExplorerV2", "FileIndexService", ex_safe_log);
                     }
+                }
+
+                // Save result to scan cache.
+                lock (_scanCacheLock)
+                {
+                    _scanCache[cacheKey] = (DateTime.UtcNow, tiles);
                 }
 
                 return tiles;

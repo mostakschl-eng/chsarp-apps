@@ -224,7 +224,7 @@
                          Foreground="{DynamicResource TextMainBrush}"
                          SelectionMode="Single"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
                          ItemContainerStyle="{StaticResource ReasonListItemStyle}"
                          SelectionChanged="ReasonsList_SelectionChanged">
                     <ListBox.ItemsPanel>

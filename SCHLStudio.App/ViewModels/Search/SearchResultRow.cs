@@ -15,5 +15,8 @@ namespace SCHLStudio.App.ViewModels.Search
         public string DateToday { get; set; } = string.Empty;
 
         public string Report { get; set; } = string.Empty;
+        public string FileStatus { get; set; } = string.Empty;
+        public string StartedAt { get; set; } = string.Empty;
+        public string CompletedAt { get; set; } = string.Empty;
     }
 }

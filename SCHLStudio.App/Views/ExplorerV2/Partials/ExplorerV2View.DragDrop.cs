@@ -33,6 +33,14 @@ namespace SCHLStudio.App.Views.ExplorerV2
         {
             try
             {
+                try
+                {
+                    e.Handled = true;
+                }
+                catch
+                {
+                }
+
                 if (e.Data?.GetDataPresent(System.Windows.DataFormats.FileDrop) != true)
                 {
                     return;
@@ -93,14 +101,132 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 }
 
                 var requiresBaseDir = _dragDropService.RequiresBaseDirForDrop(wtCtx);
-                var baseDir = ResolveBaseDirForDrop(requiresBaseDir);
-                if (requiresBaseDir && (string.IsNullOrWhiteSpace(baseDir) || !Directory.Exists(baseDir)))
+
+                var activeJobBaseDir = string.Empty;
+                try
                 {
+                    activeJobBaseDir = GetActiveJobFolderPath();
+                }
+                catch
+                {
+                    activeJobBaseDir = string.Empty;
+                }
+
+                var ctxPath = (_filesContextPath ?? string.Empty).Trim();
+                var jobFolderCandidates = new List<string>();
+                try
+                {
+                    jobFolderCandidates = _jobListRows
+                        .Select(x => (x?.FolderPath ?? string.Empty).Trim())
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                }
+                catch
+                {
+                    jobFolderCandidates = new List<string>();
+                }
+
+                (string BaseDir, bool PathsUnderBase) validation;
+                try
+                {
+                    validation = await Task.Run(() =>
+                    {
+                        string resolvedBaseDir = string.Empty;
+
+                        if (requiresBaseDir)
+                        {
+                            var candidate = (activeJobBaseDir ?? string.Empty).Trim();
+                            if (!string.IsNullOrWhiteSpace(candidate) && Directory.Exists(candidate))
+                            {
+                                resolvedBaseDir = candidate;
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    if (!string.IsNullOrWhiteSpace(ctxPath) && Directory.Exists(ctxPath))
+                                    {
+                                        foreach (var p in jobFolderCandidates)
+                                        {
+                                            try
+                                            {
+                                                if (string.IsNullOrWhiteSpace(p) || !Directory.Exists(p))
+                                                {
+                                                    continue;
+                                                }
+
+                                                if (FileOperationHelper.IsSameOrUnderPath(p, ctxPath))
+                                                {
+                                                    resolvedBaseDir = p;
+                                                    break;
+                                                }
+                                            }
+                                            catch
+                                            {
+                                            }
+                                        }
+                                    }
+                                }
+                                catch
+                                {
+                                }
+                            }
+                        }
+
+                        var under = true;
+                        try
+                        {
+                            if (!string.IsNullOrWhiteSpace(resolvedBaseDir) && Directory.Exists(resolvedBaseDir))
+                            {
+                                under = _dragDropService.AreAllDroppedPathsUnderBaseDir(resolvedBaseDir, paths);
+                            }
+                        }
+                        catch
+                        {
+                            under = true;
+                        }
+
+                        return (resolvedBaseDir, under);
+                    });
+                }
+                catch
+                {
+                    validation = (string.Empty, true);
+                }
+
+                var baseDir = (validation.BaseDir ?? string.Empty).Trim();
+                if (requiresBaseDir && string.IsNullOrWhiteSpace(baseDir))
+                {
+                    try
+                    {
+                        System.Windows.MessageBox.Show(
+                            "Select an Active Job folder first.",
+                            "SCHL App",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Information);
+                    }
+                    catch (Exception ex_safe_log)
+                    {
+                        LogSuppressedError("ExplorerV2View.DragDrop", ex_safe_log);
+                    }
                     return;
                 }
 
-                if (!EnsureDroppedPathsUnderBaseDir(baseDir, paths))
+                if (!validation.PathsUnderBase)
                 {
+                    try
+                    {
+                        System.Windows.MessageBox.Show(
+                            "Dropped files are outside the current Active Job folder. Please select the correct job.",
+                            "SCHL App",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Information);
+                    }
+                    catch (Exception ex_safe_log)
+                    {
+                        LogSuppressedError("ExplorerV2View.DragDrop", ex_safe_log);
+                    }
                     return;
                 }
 

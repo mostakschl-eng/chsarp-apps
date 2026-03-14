@@ -21,7 +21,7 @@
 
         <Style x:Key="FieldLabelTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
@@ -74,7 +74,9 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd"
                                 Background="{TemplateBinding Background}"
-                                CornerRadius="10"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
@@ -297,51 +299,117 @@
                     <DataTemplate>
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="4.2*"/>
+                                <ColumnDefinition Width="3.2*"/>
                                 <ColumnDefinition Width="1.4*"/>
+                                <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="1.0*"/>
+                                <ColumnDefinition Width="0.8*"/>
+                                <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="0.9*"/>
-                                <ColumnDefinition Width="1.2*"/>
                                 <ColumnDefinition Width="0.9*"/>
+                                <ColumnDefinition Width="0.7*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="FILE NAME" Style="{StaticResource FieldLabelTextStyle}"/>
+                                <TextBlock Text="File Name" Style="{StaticResource FieldLabelTextStyle}"/>
                                 <TextBlock Text="{Binding FileName}" ToolTip="{Binding FileName}" Style="{StaticResource FieldValueBoldTextStyle}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1">
-                                <TextBlock Text="EMPLOYEE" Style="{StaticResource FieldLabelTextStyle}"/>
+                                <TextBlock Text="Employee" Style="{StaticResource FieldLabelTextStyle}"/>
                                 <TextBlock Text="{Binding EmployeeName}" Style="{StaticResource FieldValueTextStyle}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="WORK TYPE" Style="{StaticResource FieldLabelTextStyle}"/>
-                                <TextBlock Text="{Binding WorkType}" Style="{StaticResource FieldValueTextStyle}"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="3">
-                                <TextBlock Text="SHIFT" Style="{StaticResource FieldLabelTextStyle}"/>
+                                <TextBlock Text="Shift" Style="{StaticResource FieldLabelTextStyle}"/>
                                 <TextBlock Text="{Binding Shift}" Style="{StaticResource FieldValueTextStyle}"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="4">
-                                <TextBlock Text="CLIENT" Style="{StaticResource FieldLabelTextStyle}"/>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="Client" Style="{StaticResource FieldLabelTextStyle}"/>
                                 <TextBlock Text="{Binding ClientName}" Style="{StaticResource FieldValueTextStyle}"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="5" Margin="0,0,10,0">
-                                <TextBlock Text="TIME" Style="{StaticResource FieldLabelTextStyle}"/>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="Work Type" Style="{StaticResource FieldLabelTextStyle}"/>
+                                <TextBlock Text="{Binding WorkType}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontSize="13" FontWeight="SemiBold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding WorkType}" Value="Production">
+                                                    <Setter Property="Foreground" Value="#009688"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding WorkType}" Value="QC 1">
+                                                    <Setter Property="Foreground" Value="#2196F3"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding WorkType}" Value="QC 2">
+                                                    <Setter Property="Foreground" Value="#3F51B5"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding WorkType}" Value="QC AC">
+                                                    <Setter Property="Foreground" Value="#9C27B0"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding WorkType}" Value="Test File">
+                                                    <Setter Property="Foreground" Value="#FF9800"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="5">
+                                <TextBlock Text="Status" Style="{StaticResource FieldLabelTextStyle}"/>
+                                <TextBlock Text="{Binding FileStatus}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontSize="13" FontWeight="SemiBold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding FileStatus}" Value="Working">
+                                                    <Setter Property="Foreground" Value="#2196F3"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding FileStatus}" Value="Pause">
+                                                    <Setter Property="Foreground" Value="#9C27B0"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding FileStatus}" Value="Done">
+                                                    <Setter Property="Foreground" Value="#4CAF50"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding FileStatus}" Value="Walkout">
+                                                    <Setter Property="Foreground" Value="#FF9800"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding FileStatus}" Value="Skip">
+                                                    <Setter Property="Foreground" Value="#F44336"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="6">
+                                <TextBlock Text="Start" Style="{StaticResource FieldLabelTextStyle}"/>
+                                <TextBlock Text="{Binding StartedAt}" Style="{StaticResource FieldValueTextStyle}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="7">
+                                <TextBlock Text="End" Style="{StaticResource FieldLabelTextStyle}"/>
+                                <TextBlock Text="{Binding CompletedAt}" Style="{StaticResource FieldValueTextStyle}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="8" Margin="0,0,10,0">
+                                <TextBlock Text="Time" Style="{StaticResource FieldLabelTextStyle}"/>
                                 <TextBlock Text="{Binding TimeSpent}" Style="{StaticResource FieldValueTextStyle}"/>
                             </StackPanel>
 
-                            <Button Grid.Column="6"
+                            <Button Grid.Column="9"
                                     Content="Report"
                                     Command="{Binding DataContext.ReportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"
                                     Margin="0,0,0,0"
                                     VerticalAlignment="Center"
+                                    BorderBrush="{DynamicResource PrimaryBrush}"
+                                    BorderThickness="1"
                                     Style="{StaticResource PathButtonStyle}"/>
                         </Grid>
                     </DataTemplate>

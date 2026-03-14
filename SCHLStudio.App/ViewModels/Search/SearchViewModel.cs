@@ -180,16 +180,19 @@ namespace SCHLStudio.App.ViewModels.Search
                         rows.Add(new SearchResultRow
                         {
                             FileName = item.FileName ?? string.Empty,
-                            EmployeeName = item.EmployeeName ?? string.Empty,
-                            WorkType = item.WorkType ?? string.Empty,
-                            Shift = item.Shift ?? string.Empty,
-                            ClientName = item.ClientName ?? string.Empty,
-                            ClientCode = item.ClientCode ?? string.Empty,
+                            EmployeeName = CapitalizeWords(item.EmployeeName),
+                            WorkType = FormatWorkType(item.WorkType),
+                            Shift = CapitalizeFirst(item.Shift),
+                            ClientName = (item.ClientName ?? string.Empty).ToUpperInvariant(),
+                            ClientCode = (item.ClientCode ?? string.Empty).ToUpperInvariant(),
                             TimeSpent = item.TimeSpent ?? string.Empty,
                             FilePath = item.FilePath ?? string.Empty,
                             FolderPath = item.FolderPath ?? string.Empty,
                             DateToday = item.DateToday ?? string.Empty,
                             Report = item.Report ?? string.Empty,
+                            FileStatus = CapitalizeFirst(item.FileStatus),
+                            StartedAt = FormatTimestamp(item.StartedAt),
+                            CompletedAt = FormatTimestamp(item.CompletedAt),
                         });
                     }
                 }
@@ -277,6 +280,53 @@ namespace SCHLStudio.App.ViewModels.Search
                 LogNonCritical(nameof(NormalizeQuery), ex);
                 return (query ?? string.Empty).Trim();
             }
+        }
+
+        private static string FormatTimestamp(string? iso)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(iso)) return string.Empty;
+                if (DateTime.TryParse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+                {
+                    var local = dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime() : dt;
+                    return local.ToString("dd MMM hh:mm tt");
+                }
+                return iso.Trim();
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string CapitalizeFirst(string? value)
+        {
+            var s = (value ?? string.Empty).Trim();
+            if (s.Length == 0) return string.Empty;
+            return char.ToUpper(s[0]) + s[1..];
+        }
+
+        private static string CapitalizeWords(string? value)
+        {
+            var s = (value ?? string.Empty).Trim();
+            if (s.Length == 0) return string.Empty;
+            var parts = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            for (var i = 0; i < parts.Length; i++)
+            {
+                if (parts[i].Length > 0)
+                    parts[i] = char.ToUpper(parts[i][0]) + parts[i][1..];
+            }
+            return string.Join(' ', parts);
+        }
+
+        private static string FormatWorkType(string? value)
+        {
+            var s = (value ?? string.Empty).Trim();
+            if (s.Equals("qc ac", StringComparison.OrdinalIgnoreCase)) return "QC AC";
+            if (s.Equals("qc 1", StringComparison.OrdinalIgnoreCase)) return "QC 1";
+            if (s.Equals("qc 2", StringComparison.OrdinalIgnoreCase)) return "QC 2";
+            return CapitalizeWords(s);
         }
 
         private async Task ReportAsync(SearchResultRow? row)

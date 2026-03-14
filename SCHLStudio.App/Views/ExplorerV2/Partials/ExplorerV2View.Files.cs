@@ -351,20 +351,42 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
-        private void ReloadFilesButton_Click(object sender, RoutedEventArgs e)
+        private bool _isReloading;
+
+        private async void ReloadFilesButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_isReloading) return;
+
             try
             {
+                _isReloading = true;
+                if (sender is System.Windows.Controls.Primitives.ButtonBase btn)
+                {
+                    btn.IsEnabled = false;
+                }
+
                 var baseDir = string.Empty;
                 baseDir = GetActiveJobFolderPath();
 
                 _fileIndexService.InvalidateDoneRootCache(baseDir);
 
-                RefreshFileTilesForCurrentContext(baseDir);
+                // Await the core refresh so we know exactly when the scan is finished.
+                await RefreshFileTilesForCurrentContextCore(baseDir);
+
+                // 3-second cooldown AFTER the scan successfully completes.
+                await Task.Delay(3000);
             }
             catch (Exception relEx)
             {
                 System.Diagnostics.Debug.WriteLine($"ReloadFilesButton_Click error: {relEx.Message}");
+            }
+            finally
+            {
+                if (sender is System.Windows.Controls.Primitives.ButtonBase btn)
+                {
+                    btn.IsEnabled = true;
+                }
+                _isReloading = false;
             }
         }
 

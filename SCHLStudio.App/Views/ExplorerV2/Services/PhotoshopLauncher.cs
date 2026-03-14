@@ -23,7 +23,7 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
             (AutoKey, "Auto (Windows default)", string.Empty),
             (Ps2026Key, "Photoshop 26", @"C:\Program Files\Adobe\Adobe Photoshop 2026\Photoshop.exe"),
             (Ps2025Key, "Photoshop 25", @"C:\Program Files\Adobe\Adobe Photoshop 2025\Photoshop.exe"),
-            (PsCcKey, "Photoshop CC", @"C:\Program Files\Adobe\Adobe Photoshop CC (64 Bit)\Photoshop.exe")
+            (PsCcKey, "Photoshop CC", @"C:\Program Files (x86)\Adobe\Adobe Photoshop CC\Photoshop.exe")
         ];
 
         public IReadOnlyList<(string Key, string DisplayName, string? ExePath, bool IsAvailable)> GetAvailableVersions()

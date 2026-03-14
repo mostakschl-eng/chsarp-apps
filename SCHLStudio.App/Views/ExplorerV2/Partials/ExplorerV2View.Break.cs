@@ -82,7 +82,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
         private static IReadOnlyList<string> GetPauseReasonsOrDefault()
         {
-            var fallback = new[] { "Toilet", "Meeting", "Breakfast", "Lunch", "Dinner", "Namaz" };
+            var fallback = new[] { "Toilet", "Meeting", "Breakfast", "Lunch", "Dinner", "Namaz", "Guideline Review" };
 
             try
             {
@@ -109,11 +109,16 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     list.Clear();
                 }
 
-                list = list
+                // Merge with fallback so newly-added defaults (e.g. "Guideline Review")
+                // still appear even if the config list is missing them.
+                var merged = fallback
+                    .Concat(list)
+                    .Select(x => (x ?? string.Empty).Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                return list.Count == 0 ? fallback : list;
+                return merged.Count == 0 ? fallback : merged;
             }
             catch (Exception ex)
             {

@@ -196,11 +196,51 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
         {
             try
             {
-                var safe = (items ?? Enumerable.Empty<FileTileItem>())
+                var incoming = (items ?? Enumerable.Empty<FileTileItem>())
                     .Where(x => x is not null)
                     .ToList();
 
-                FileTiles = new ObservableCollection<FileTileItem>(safe);
+                // First load or mode switch (empty → full): just assign directly — fastest path.
+                if (_fileTiles.Count == 0)
+                {
+                    FileTiles = new ObservableCollection<FileTileItem>(incoming);
+                    return;
+                }
+
+                // Build a lookup of incoming items by FullPath for O(1) matching.
+                var incomingByPath = new Dictionary<string, FileTileItem>(incoming.Count, StringComparer.OrdinalIgnoreCase);
+                foreach (var tile in incoming)
+                {
+                    var key = (tile.FullPath ?? string.Empty).Trim();
+                    if (!string.IsNullOrWhiteSpace(key))
+                        incomingByPath[key] = tile;
+                }
+
+                // 1. Remove tiles that are no longer in the incoming set (reverse order for safe index removal).
+                for (int i = _fileTiles.Count - 1; i >= 0; i--)
+                {
+                    var existing = _fileTiles[i];
+                    var key = (existing?.FullPath ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(key) || !incomingByPath.ContainsKey(key))
+                    {
+                        _fileTiles.RemoveAt(i);
+                    }
+                }
+
+                // 2. Build a set of what's currently in the collection.
+                var currentPaths = new HashSet<string>(
+                    _fileTiles.Select(t => (t?.FullPath ?? string.Empty).Trim()),
+                    StringComparer.OrdinalIgnoreCase);
+
+                // 3. Append new items that don't exist yet.
+                foreach (var tile in incoming)
+                {
+                    var key = (tile.FullPath ?? string.Empty).Trim();
+                    if (!string.IsNullOrWhiteSpace(key) && !currentPaths.Contains(key))
+                    {
+                        _fileTiles.Add(tile);
+                    }
+                }
             }
             catch (Exception ex)
             {
