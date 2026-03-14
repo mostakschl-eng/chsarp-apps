@@ -404,7 +404,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
 
             ReloadCommand = new RelayCommand(_ =>
             {
-                _ = LoadDataAsync();
+                _ = LoadDataAsync(hardRefresh: true);
             });
 
             PendingSingleDate = SelectedDate;
@@ -934,7 +934,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
             });
         }
 
-        public async Task LoadDataAsync()
+        public async Task LoadDataAsync(bool hardRefresh = false)
         {
             // Use a semaphore so at most one load runs at a time.
             // If a load is already in progress, skip this tick to avoid flooding the server.
@@ -943,6 +943,19 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
             try
             {
                 IsLoading = true;
+
+                if (hardRefresh)
+                {
+                    try
+                    {
+                        _allData = null;
+                        _allSessionData = new List<TrackerUserSessionModel>();
+                        PauseTab.ResetSessionSnapshot();
+                    }
+                    catch
+                    {
+                    }
+                }
 
                 var previousWorkLogs = _allData;
                 var previousSessions = _allSessionData;
@@ -1075,7 +1088,7 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                 var incomingWorkLogs = snapshot?.WorkLogs ?? new List<LiveTrackingSessionModel>();
                 var incomingSessions = snapshot?.Sessions?.Where(s => s != null).ToList() ?? new List<TrackerUserSessionModel>();
 
-                if (incomingWorkLogs.Count == 0 && previousWorkLogs != null && previousWorkLogs.Count > 0)
+                if (!hardRefresh && incomingWorkLogs.Count == 0 && previousWorkLogs != null && previousWorkLogs.Count > 0)
                 {
                     Debug.WriteLine("[LiveTrackingViewModel] Snapshot reload returned 0 worklogs; keeping previous.");
                     _allData = previousWorkLogs;
@@ -1083,8 +1096,15 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                 }
                 else
                 {
-                    PreserveRecentActiveSessions(incomingWorkLogs);
-                    _allData = MergeWorkLogs(previousWorkLogs, incomingWorkLogs, KeyOf, ToUtcSafe);
+                    if (!hardRefresh)
+                    {
+                        PreserveRecentActiveSessions(incomingWorkLogs);
+                        _allData = MergeWorkLogs(previousWorkLogs, incomingWorkLogs, KeyOf, ToUtcSafe);
+                    }
+                    else
+                    {
+                        _allData = incomingWorkLogs;
+                    }
                     _allSessionData = incomingSessions;
 
                     PauseTab.ResetSessionSnapshot();
