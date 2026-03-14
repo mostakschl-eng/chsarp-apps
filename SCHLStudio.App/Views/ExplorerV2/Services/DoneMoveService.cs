@@ -194,8 +194,62 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                             continue;
                         }
 
-                        var dest = Path.Combine(parentDir, Path.GetFileName(src));
-                        File.Move(src, dest, overwrite: true);
+                        var basename = Path.GetFileNameWithoutExtension(src) ?? string.Empty;
+                        if (string.IsNullOrWhiteSpace(basename))
+                        {
+                            var dest = Path.Combine(parentDir, Path.GetFileName(src));
+                            File.Move(src, dest, overwrite: true);
+                            continue;
+                        }
+
+                        var candidates = GetCandidateFiles(srcDir, basename);
+                        if (candidates.Count == 0)
+                        {
+                            var dest = Path.Combine(parentDir, Path.GetFileName(src));
+                            File.Move(src, dest, overwrite: true);
+                            continue;
+                        }
+
+                        candidates.Sort((a, b) => File.GetLastWriteTimeUtc(b).CompareTo(File.GetLastWriteTimeUtc(a)));
+                        var winner = candidates[0];
+                        var supporters = candidates.Count > 1
+                            ? candidates.GetRange(1, candidates.Count - 1)
+                            : new List<string>();
+
+                        var destWinner = Path.Combine(parentDir, Path.GetFileName(winner));
+                        if (File.Exists(winner))
+                        {
+                            File.Move(winner, destWinner, overwrite: true);
+                        }
+
+                        if (supporters.Count > 0)
+                        {
+                            var rawDir = Path.Combine(srcDir, RawFolderName);
+                            Directory.CreateDirectory(rawDir);
+
+                            foreach (var sup in supporters)
+                            {
+                                try
+                                {
+                                    if (string.IsNullOrWhiteSpace(sup) || !File.Exists(sup))
+                                    {
+                                        continue;
+                                    }
+
+                                    var supDest = Path.Combine(rawDir, Path.GetFileName(sup));
+                                    File.Move(sup, supDest, overwrite: true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    LogSuppressed(nameof(MoveBackFromWorkFoldersToParent) + ".MoveSupporter", ex, new Dictionary<string, string?>
+                                    {
+                                        ["supporter"] = sup,
+                                        ["srcDir"] = srcDir,
+                                        ["currentUser"] = currentUser
+                                    });
+                                }
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {

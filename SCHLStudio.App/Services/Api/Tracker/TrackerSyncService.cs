@@ -137,6 +137,29 @@ namespace SCHLStudio.App.Services.Api.Tracker
             }
         }
 
+        public void QueuePause(SyncPauseDto dto)
+        {
+            try
+            {
+                _queue.Enqueue(dto);
+                _worker.TriggerSync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[TrackerService] QueuePause failed: {ex.Message}");
+                try
+                {
+                    AppDataLog.LogError(
+                        area: "Tracker",
+                        operation: "Service.QueuePause",
+                        ex: ex);
+                }
+                catch
+                {
+                }
+            }
+        }
+
         /// <summary>
         /// Number of items waiting in the queue.
         /// </summary>

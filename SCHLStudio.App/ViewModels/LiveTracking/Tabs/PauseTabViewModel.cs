@@ -321,6 +321,15 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Tabs
                             isWorking = !isPaused && allFiles.Any(f => IsWorkingStatus(f.FileStatus));
                         }
                     }
+
+                    if (!isPaused && !isWorking)
+                    {
+                        // Pause payloads can arrive without files[]; infer paused from
+                        // an open pause reason entry (completed_at = null).
+                        isPaused = userSessions.Any(s =>
+                            s.PauseReasonDetails != null
+                            && s.PauseReasonDetails.Any(pr => pr != null && !pr.EndTime.HasValue));
+                    }
                     
                     if (isWorking)
                     {

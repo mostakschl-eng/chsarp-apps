@@ -48,9 +48,6 @@ namespace SCHLStudio.App.Services.Api.Tracker
             int? estimateTime,
             string categories,
             int totalTimes,
-            int pauseCount,
-            int pauseTime,
-            List<PauseReasonDto>? pauseReasons,
             IReadOnlyList<string> filePaths,
             int perFileTime,
             string fileStatus = "done")
@@ -66,9 +63,6 @@ namespace SCHLStudio.App.Services.Api.Tracker
                 Categories = categories,
                 FileStatus = fileStatus,
                 TotalTimes = totalTimes,
-                PauseCount = pauseCount,
-                PauseTime = pauseTime,
-                PauseReasons = pauseReasons,
                 Files = filePaths.Select(fp => new QcWorkLogFileDto
                 {
                     FileName = NormalizeFileName(fp),
@@ -88,9 +82,6 @@ namespace SCHLStudio.App.Services.Api.Tracker
             string? categories,
             int? totalTimes,
             string fileStatus,
-            int pauseCount,
-            int pauseTime,
-            List<PauseReasonDto>? pauseReasons,
             IReadOnlyList<string> filePaths,
             int? perFileTimeSpent = null)
         {
@@ -105,15 +96,35 @@ namespace SCHLStudio.App.Services.Api.Tracker
                 Categories = categories,
                 TotalTimes = totalTimes,
                 FileStatus = fileStatus,
-                PauseCount = pauseCount,
-                PauseTime = pauseTime,
-                PauseReasons = pauseReasons,
                 Files = filePaths.Select(fp => new QcWorkLogFileDto
                 {
                     FileName = NormalizeFileName(fp),
                     FilePath = (fp ?? string.Empty).Trim(),
                     TimeSpent = perFileTimeSpent,
                 }).ToList(),
+            };
+        }
+
+        public static SyncPauseDto CreatePauseDto(
+            string employeeName,
+            string status,
+            string? reason,
+            string workType,
+            string shift,
+            string clientCode,
+            string folderPath,
+            int? totalTimes)
+        {
+            return new SyncPauseDto
+            {
+                EmployeeName = (employeeName ?? string.Empty).ToLowerInvariant(),
+                Status = (status ?? string.Empty).Trim(),
+                Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(),
+                WorkType = (workType ?? string.Empty).ToLowerInvariant(),
+                Shift = shift,
+                ClientCode = clientCode,
+                FolderPath = folderPath,
+                TotalTimes = totalTimes,
             };
         }
     }

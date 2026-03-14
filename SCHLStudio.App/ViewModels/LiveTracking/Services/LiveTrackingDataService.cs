@@ -365,16 +365,24 @@ namespace SCHLStudio.App.ViewModels.LiveTracking.Services
                     Files = new System.Collections.ObjectModel.ObservableCollection<LiveTrackingFileModel>()
                 };
 
+                var hasOpenPause = model.PauseReasonDetails.Any(pr => pr != null && !pr.EndTime.HasValue);
+
                 if (dto.Files != null)
                 {
                     foreach (var f in dto.Files
                         .OrderBy(x => string.Equals(x.FileStatus, "working", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                         .ThenByDescending(x => x.StartedAt ?? x.CompletedAt ?? DateTime.MinValue))
                     {
+                        string mappedStatus = f.FileStatus ?? string.Empty;
+                        if (hasOpenPause && LiveTrackingFileModel.IsWorkingStatus(mappedStatus.Trim()))
+                        {
+                            mappedStatus = "paused";
+                        }
+
                         model.Files.Add(new LiveTrackingFileModel
                         {
                             FileName = f.FileName ?? "",
-                            FileStatus = f.FileStatus ?? "",
+                            FileStatus = mappedStatus,
                             Report = f.Report ?? "",
                             // Backend stores seconds; UI expects minutes.
                             TimeSpent = SecondsToMinutes(f.TimeSpent),

@@ -655,15 +655,19 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
 
                                 if (target == null)
                                 {
-                                    target = new LiveTrackingFileModel
+                                    var placeholderName = (topFileName ?? string.Empty).Trim();
+                                    if (!string.IsNullOrWhiteSpace(placeholderName))
                                     {
-                                        FileName = topFileName,
-                                        FileStatus = (updatedStatus ?? string.Empty).Trim(),
-                                        TimeSpent = 0,
-                                        StartTime = updateTime,
-                                        EndTime = null,
-                                    };
-                                    sorted.Add(target);
+                                        target = new LiveTrackingFileModel
+                                        {
+                                            FileName = placeholderName,
+                                            FileStatus = (updatedStatus ?? string.Empty).Trim(),
+                                            TimeSpent = 0,
+                                            StartTime = updateTime,
+                                            EndTime = null,
+                                        };
+                                        sorted.Add(target);
+                                    }
                                 }
 
                                 if (target != null)
@@ -693,6 +697,9 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
                         }
                         else
                         {
+                            var deltaSaysPausedTop = string.Equals((updatedStatus ?? string.Empty).Trim(), "pause", StringComparison.OrdinalIgnoreCase)
+                                || string.Equals((updatedStatus ?? string.Empty).Trim(), "paused", StringComparison.OrdinalIgnoreCase);
+
                             // If server omitted files[] in delta, keep session active based on top-level status.
                             if (deltaSaysWorkingTop && session.Files != null)
                             {
@@ -711,21 +718,58 @@ namespace SCHLStudio.App.ViewModels.LiveTracking
 
                                     if (existing == null)
                                     {
-                                        existing = new LiveTrackingFileModel
+                                        var placeholderName = (topFileName ?? string.Empty).Trim();
+                                        if (!string.IsNullOrWhiteSpace(placeholderName))
                                         {
-                                            FileName = topFileName,
-                                            FileStatus = (updatedStatus ?? string.Empty).Trim(),
-                                            TimeSpent = 0,
-                                            StartTime = updateTime,
-                                            EndTime = null,
-                                        };
-                                        session.Files.Add(existing);
+                                            existing = new LiveTrackingFileModel
+                                            {
+                                                FileName = placeholderName,
+                                                FileStatus = (updatedStatus ?? string.Empty).Trim(),
+                                                TimeSpent = 0,
+                                                StartTime = updateTime,
+                                                EndTime = null,
+                                            };
+                                            session.Files.Add(existing);
+                                        }
                                     }
                                     else
                                     {
                                         existing.FileStatus = (updatedStatus ?? string.Empty).Trim();
                                     }
 
+                                    session.NotifyFilesChanged();
+                                }
+                            }
+
+                            // Pause events from pause_sessions intentionally omit file arrays.
+                            // Flip one current working file to paused so tabs classify this
+                            // session as paused (not working) until a resume/working delta arrives.
+                            if (deltaSaysPausedTop && session.Files != null)
+                            {
+                                LiveTrackingFileModel? pauseTarget = null;
+
+                                if (!string.IsNullOrWhiteSpace(topFileName))
+                                {
+                                    pauseTarget = session.Files.FirstOrDefault(f =>
+                                        string.Equals((f.FileName ?? string.Empty).Trim(), topFileName, StringComparison.OrdinalIgnoreCase));
+                                }
+
+                                if (pauseTarget == null)
+                                {
+                                    pauseTarget = session.Files.FirstOrDefault(f =>
+                                        LiveTrackingFileModel.IsWorkingStatus((f.FileStatus ?? string.Empty).Trim()));
+                                }
+
+                                if (pauseTarget == null)
+                                {
+                                    pauseTarget = session.Files
+                                        .OrderByDescending(f => f.StartTime ?? f.EndTime ?? DateTime.MinValue)
+                                        .FirstOrDefault();
+                                }
+
+                                if (pauseTarget != null)
+                                {
+                                    pauseTarget.FileStatus = "paused";
                                     session.NotifyFilesChanged();
                                 }
                             }

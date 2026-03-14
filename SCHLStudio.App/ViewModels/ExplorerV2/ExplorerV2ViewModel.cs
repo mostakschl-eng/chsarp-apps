@@ -60,7 +60,7 @@ namespace SCHLStudio.App.ViewModels.ExplorerV2
 
         public bool CanExecuteStart => !IsStarted && SelectedFilePaths.Count > 0;
 
-        public bool CanExecuteBreak => IsStarted && !IsPaused && SelectedFilePaths.Count > 0;
+        public bool CanExecuteBreak => !IsPaused;
 
         private bool _isStarted;
         public bool IsStarted

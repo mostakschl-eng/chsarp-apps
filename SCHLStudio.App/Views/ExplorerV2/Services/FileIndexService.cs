@@ -262,7 +262,7 @@ namespace SCHLStudio.App.Views.ExplorerV2.Services
                     return dirName;
                 }
 
-                return new DirectoryInfo(dirPath).Name;
+                return new DirectoryInfo(trimmed).Name;
             }
             catch
             {

@@ -115,6 +115,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
             {
                 var reason = _vm.SelectedBreakReason;
                 _workSession.BeginPause(reason);
+                TrackerSyncPause(reason, "paused");
             }
             catch (Exception ex)
             {
@@ -130,6 +131,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
             try
             {
                 _workSession.EndPause();
+                TrackerSyncPause(null, "working");
             }
             catch (Exception ex)
             {
@@ -483,36 +485,32 @@ namespace SCHLStudio.App.Views.ExplorerV2
             }
         }
 
-        private List<PauseReasonDto>? BuildPauseReasons()
+        private void TrackerSyncPause(string? reason, string status)
         {
             try
             {
-                var list = _workSession.PauseReasonHistory
-                    .Select(x => new PauseReasonDto
-                    {
-                        Reason = x.Reason,
-                        Duration = (int)x.DurationSeconds
-                    })
-                    .ToList();
-
-                // If currently paused, include the active reason immediately so backend can
-                // show the selected reason and live duration even before resume.
-                if (_workSession.IsPauseActive)
+                if (_trackerSync is null)
                 {
-                    var r = (_workSession.CurrentPauseReason ?? string.Empty).Trim();
-                    if (!string.IsNullOrWhiteSpace(r))
-                    {
-                        var currentPauseSeconds = Math.Max(0, _workSession.TotalPauseTimeSeconds - _workSession.PauseTimeSeconds);
-                        list.Add(new PauseReasonDto { Reason = r, Duration = (int)currentPauseSeconds });
-                    }
+                    return;
                 }
 
-                return list.Count == 0 ? null : list;
+                var isIdleBreak = IsIdleBreakContext();
+
+                var dto = TrackerDtoFactory.CreatePauseDto(
+                    employeeName: Configuration.AppConfig.CurrentDisplayName,
+                    status: status,
+                    reason: reason,
+                    workType: isIdleBreak ? string.Empty : GetEffectiveWorkTypeForTracker(),
+                    shift: GetEffectiveShiftForTracker(),
+                    clientCode: isIdleBreak ? string.Empty : GetEffectiveClientCodeForTracker(),
+                    folderPath: isIdleBreak ? string.Empty : GetActiveJobFolderPath(),
+                    totalTimes: isIdleBreak ? null : GetWorkTimerElapsedSeconds());
+
+                _trackerSync.QueuePause(dto);
             }
-            catch (Exception preasEx)
+            catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"BuildPauseReasons error: {preasEx.Message}");
-                return null;
+                Debug.WriteLine($"[ExplorerV2.Tracker] TrackerSyncPause error: {ex.Message}");
             }
         }
 
@@ -543,9 +541,6 @@ namespace SCHLStudio.App.Views.ExplorerV2
                         categories: categories,
                         totalTimes: null,
                         fileStatus: fileStatus,
-                        pauseCount: _workSession.PauseCount,
-                        pauseTime: (int)_workSession.TotalPauseTimeSeconds,
-                        pauseReasons: BuildPauseReasons(),
                         filePaths: validFiles,
                         perFileTimeSpent: null);
 
@@ -647,9 +642,6 @@ namespace SCHLStudio.App.Views.ExplorerV2
                         Categories = GetEffectiveCategoriesForTracker(),
                         TotalTimes = delta,
                         FileStatus = overrideStatus ?? "working",
-                        PauseCount = _workSession.PauseCount,
-                        PauseTime = (int)_workSession.TotalPauseTimeSeconds,
-                        PauseReasons = BuildPauseReasons(),
                         Files = new System.Collections.Generic.List<QcWorkLogFileDto>()
                     };
 

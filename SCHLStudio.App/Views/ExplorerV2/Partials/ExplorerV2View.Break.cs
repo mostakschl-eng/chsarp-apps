@@ -8,6 +8,40 @@ namespace SCHLStudio.App.Views.ExplorerV2
 {
     public partial class ExplorerV2View
     {
+        private bool _isIdleBreakActive;
+
+        private bool IsIdleBreakContext()
+        {
+            try
+            {
+                var selectedCount = _vm.SelectedFiles?.Count ?? 0;
+                if (selectedCount > 0)
+                {
+                    return false;
+                }
+
+                var effectiveClient = _vm.HasSelectionMetaLock
+                    ? (_vm.SelectionLockedClientCode ?? string.Empty)
+                    : (_vm.ActiveJobClientCode ?? string.Empty);
+
+                if (!string.IsNullOrWhiteSpace(effectiveClient))
+                {
+                    return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(_vm.ActiveJobFolderPath))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private void ApplyPausedUiState()
         {
             try
@@ -133,6 +167,23 @@ namespace SCHLStudio.App.Views.ExplorerV2
                     return;
                 }
 
+                if (_isIdleBreakActive)
+                {
+                    try
+                    {
+                        _vm.IsPaused = false;
+                        TrackerEndPause();
+                    }
+                    catch (Exception ex_safe_log)
+                    {
+                        LogSuppressedError("ManualResumeFromBreak.IdleEndPause", ex_safe_log);
+                    }
+
+                    _isIdleBreakActive = false;
+                    ResetActionButtons();
+                    return;
+                }
+
                 _vm.IsPaused = false;
                 _vm.StartButtonText = "Pause";
 
@@ -143,6 +194,8 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 TrackerEndPause();
                 TrackerQueueResumed(GetTrackerTargetFullPaths());
                 ResumeWorkTimer();
+
+                _isIdleBreakActive = false;
 
                 ClearBreakReason();
 
@@ -168,6 +221,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
             {
                 if (!_vm.IsStarted)
                 {
+                    _isIdleBreakActive = IsIdleBreakContext();
                     _vm.IsStarted = true;
                     _vm.IsPaused = true;
 
@@ -187,6 +241,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
                 }
 
                 _vm.IsPaused = true;
+                _isIdleBreakActive = false;
 
                 ApplyPausedUiState();
 
@@ -232,6 +287,7 @@ namespace SCHLStudio.App.Views.ExplorerV2
 
                 _vm.IsStarted = false;
                 _vm.IsPaused = false;
+                _isIdleBreakActive = false;
                 ClearBreakReason();
 
                 ResetWorkTimer();

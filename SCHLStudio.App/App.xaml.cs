@@ -660,45 +660,6 @@ namespace SCHLStudio.App
         {
             try
             {
-                // Use AppConfig constants instead of configuration
-                Directory.CreateDirectory(AppConfig.GLOBAL_DATA_DIR);
-            }
-            catch (Exception ex)
-            {
-                try
-                {
-                    AppDataLog.LogError(
-                        area: "App",
-                        operation: "TryCleanupLocalData",
-                        ex: ex,
-                        data: new System.Collections.Generic.Dictionary<string, string?>
-                        {
-                            ["dataDir"] = AppConfig.GLOBAL_DATA_DIR
-                        });
-                }
-                catch (Exception logEx)
-                {
-                    try
-                    {
-                        AppDataLog.LogError(
-                            area: "App",
-                            operation: "TryCleanupLocalData.LogFailure",
-                            ex: logEx);
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
-
-            try
-            {
-                CleanupOldDailyFolders(AppConfig.APP_DATA_DIR);
-            }
-            catch { }
-
-            try
-            {
                 // LOCAL_APP_DATA_DIR already points at one user root: ...\apps cache data\<user>
                 CleanupOldDailyFolders(AppConfig.LOCAL_APP_DATA_DIR);
             }

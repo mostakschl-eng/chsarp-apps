@@ -178,6 +178,45 @@ namespace SCHLStudio.App.Services.Api.Tracker
         }
 
         /// <summary>
+        /// Enqueue a pause/resume tracker entry.
+        /// </summary>
+        public bool Enqueue(SyncPauseDto item)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(item.SyncId))
+                {
+                    item.SyncId = Guid.NewGuid().ToString("N");
+                }
+
+                var wrapper = new QueueItemWrapper
+                {
+                    Type = "pause",
+                    Pause = item,
+                    RetryCount = 0,
+                    QueuedAt = DateTime.UtcNow.ToString("o")
+                };
+
+                return EnqueueInternal(wrapper);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[TrackerQueue] Enqueue pause failed: {ex.Message}");
+                try
+                {
+                    AppDataLog.LogError(
+                        area: "Tracker",
+                        operation: "Queue.Enqueue.Pause",
+                        ex: ex);
+                }
+                catch
+                {
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Read all queued items without removing them.
         /// </summary>
         public List<QueueItemWrapper> PeekAll()
@@ -427,11 +466,13 @@ namespace SCHLStudio.App.Services.Api.Tracker
                     queue.Add(wrapper);
                     WriteQueue(queue);
 
-                    var name = wrapper.Type == "qc" || wrapper.Type == "batch"
-                        ? $"qc ({wrapper.Batch?.Files?.Count ?? 0} files)"
-                        : "qc (?)";
+                    var name = wrapper.Type == "pause"
+                        ? $"pause [{wrapper.Pause?.Status}]"
+                        : wrapper.Type == "qc" || wrapper.Type == "batch"
+                            ? $"qc ({wrapper.Batch?.Files?.Count ?? 0} files) [{wrapper.Batch?.FileStatus}]"
+                            : "qc (?)";
 
-                    Debug.WriteLine($"[TrackerQueue] Queued: {name} [{wrapper.Batch?.FileStatus}] (Queue size: {queue.Count})");
+                    Debug.WriteLine($"[TrackerQueue] Queued: {name} (Queue size: {queue.Count})");
                     return true;
                 }
                 catch (Exception ex)
@@ -577,6 +618,7 @@ namespace SCHLStudio.App.Services.Api.Tracker
     {
         public string Type { get; set; } = "qc";
         public SyncQcWorkLogDto? Batch { get; set; }
+        public SyncPauseDto? Pause { get; set; }
         public int RetryCount { get; set; }
         public string? QueuedAt { get; set; }
     }

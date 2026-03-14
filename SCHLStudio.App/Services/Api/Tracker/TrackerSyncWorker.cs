@@ -308,6 +308,11 @@ namespace SCHLStudio.App.Services.Api.Tracker
                 url = _apiBaseUrl + "/sync-qc";
                 json = JsonSerializer.Serialize(item.Batch, JsonOptions);
             }
+            else if (item.Type == "pause" && item.Pause is not null)
+            {
+                url = _apiBaseUrl + "/pause";
+                json = JsonSerializer.Serialize(item.Pause, JsonOptions);
+            }
             else
             {
                 Debug.WriteLine("[TrackerSync] Invalid queue item — no payload");
@@ -502,6 +507,9 @@ namespace SCHLStudio.App.Services.Api.Tracker
         {
             if ((item.Type == "qc" || item.Type == "batch") && item.Batch is not null)
                 return $"qc({item.Batch.Files?.Count ?? 0} files) [{item.Batch.FileStatus}]";
+
+            if (item.Type == "pause" && item.Pause is not null)
+                return $"pause[{item.Pause.Status}]";
 
             return "qc(?)";
         }
